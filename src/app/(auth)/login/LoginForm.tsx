@@ -26,6 +26,15 @@ export default function LoginForm() {
   const [isGoogleEnabled, setIsGoogleEnabled] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [activeSettlementPlan, setActiveSettlementPlan] = useState<{
+    code: string;
+    name: string;
+    brandPayout: string;
+  }>({
+    code: "kelas_b",
+    name: "Kelas B",
+    brandPayout: "50%",
+  });
   const router = useRouter();
   const { login } = useAuth();
 
@@ -81,6 +90,51 @@ export default function LoginForm() {
     } catch {
       setIsGoogleEnabled(false);
     }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    vendorApi
+      .getSettlementClasses()
+      .then((res) => {
+        const data = Array.isArray(res) ? res : res?.data;
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          const mapped = data.map((item: any) => {
+            const brandPct = Math.round(
+              Number(item.brand_share_percentage ?? item.brand_share ?? 50)
+            );
+            const code = (item.code || item.class_code || "kelas_b").toLowerCase();
+            return {
+              code,
+              name:
+                item.name ||
+                (code === "kelas_a"
+                  ? "Kelas A"
+                  : code === "kelas_c"
+                  ? "Kelas C"
+                  : "Kelas B"),
+              brandPayout: `${brandPct}%`,
+              isRecommended: Boolean(item.is_recommended || item.is_default),
+            };
+          });
+
+          if (mapped.length > 0) {
+            const chosen = mapped.find((m) => m.isRecommended) || mapped[0];
+            if (chosen) {
+              setActiveSettlementPlan({
+                code: chosen.code,
+                name: chosen.name,
+                brandPayout: chosen.brandPayout,
+              });
+            }
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const checkMaintenance = useCallback(async (isSilent = false) => {
@@ -456,11 +510,16 @@ export default function LoginForm() {
             Marketplace Settlement Policy
           </div>
           <div className="rounded-xl bg-base-200/60 p-3 text-xs text-base-content/70 space-y-1">
-            <div className="flex justify-between font-medium">
-              <span>Standard Settlement:</span>
-              <span className="text-primary font-bold">
-                Kelas B (50% Payout)
-              </span>
+            <div className="flex items-center justify-between font-medium gap-2">
+              <span className="shrink-0">Current Active:</span>
+              <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                <span className="text-primary font-bold">
+                  {activeSettlementPlan.name} ({activeSettlementPlan.brandPayout} Payout)
+                </span>
+                <span className="badge badge-warning badge-xs text-[10px] font-semibold">
+                  Recommend only
+                </span>
+              </div>
             </div>
             <div className="flex justify-between text-base-content/60">
               <span>Weekly Payout Cutoff:</span>

@@ -163,6 +163,18 @@ export default function RegisterForm() {
         });
         if (mapped.length > 0) {
           setSettlementClasses(mapped);
+          if (mapped.length === 1) {
+            setFormData((prev) => ({ ...prev, settlement_class: mapped[0].code }));
+          } else {
+            setFormData((prev) => {
+              const currentValid = mapped.some((m: any) => m.code === prev.settlement_class);
+              if (!currentValid) {
+                const def = mapped.find((m: any) => m.isDefault) || mapped[0];
+                return { ...prev, settlement_class: def.code };
+              }
+              return prev;
+            });
+          }
         }
       }
     }).catch(() => {});
@@ -171,6 +183,13 @@ export default function RegisterForm() {
       isMounted = false;
     };
   }, []);
+
+  // Ensure formData always preselects the single plan whenever there is only 1 record
+  useEffect(() => {
+    if (settlementClasses.length === 1 && formData.settlement_class !== settlementClasses[0].code) {
+      setFormData((prev) => ({ ...prev, settlement_class: settlementClasses[0].code }));
+    }
+  }, [settlementClasses, formData.settlement_class]);
 
   // Upload States
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -904,42 +923,63 @@ export default function RegisterForm() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                {settlementClasses.map((cls) => (
-                  <label
-                    key={cls.code}
-                    className={`flex flex-col p-3.5 rounded-xl border cursor-pointer transition-all ${
-                      formData.settlement_class === cls.code
-                        ? "border-primary bg-primary/10 text-primary shadow-sm"
-                        : "border-base-300 hover:border-base-content/20 bg-base-200/30"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-base-content">{cls.name}</span>
-                        {cls.isDefault && (
-                          <span className="badge badge-primary badge-xs text-[9px] text-white">
-                            Standard
-                          </span>
-                        )}
+              <div className={settlementClasses.length === 1 ? "w-full" : "grid grid-cols-1 md:grid-cols-3 gap-3.5"}>
+                {settlementClasses.map((cls) => {
+                  const isSinglePlan = settlementClasses.length === 1;
+                  const isChecked = isSinglePlan || formData.settlement_class === cls.code;
+
+                  return (
+                    <label
+                      key={cls.code}
+                      onClick={(e) => {
+                        if (isSinglePlan) {
+                          e.preventDefault();
+                        }
+                      }}
+                      className={`flex flex-col p-3.5 rounded-xl border transition-all ${
+                        isSinglePlan
+                          ? "w-full border-primary/50 bg-primary/5 text-primary shadow-sm cursor-default select-none"
+                          : isChecked
+                          ? "border-primary bg-primary/10 text-primary shadow-sm cursor-pointer"
+                          : "border-base-300 hover:border-base-content/20 bg-base-200/30 cursor-pointer"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-base-content">{cls.name}</span>
+                          {cls.isDefault && (
+                            <span className="badge badge-primary badge-xs text-[9px] text-white">
+                              Standard
+                            </span>
+                          )}
+                          {isSinglePlan && (
+                            <span className="badge badge-ghost badge-xs text-[9px] text-base-content/60 font-medium">
+                              Readonly
+                            </span>
+                          )}
+                        </div>
+                        <input
+                          type="radio"
+                          name="settlement_class"
+                          value={cls.code}
+                          checked={isChecked}
+                          disabled={isSinglePlan}
+                          readOnly={isSinglePlan}
+                          onChange={isSinglePlan ? undefined : handleChange}
+                          className={`radio radio-primary radio-xs ${
+                            isSinglePlan ? "disabled:!opacity-100 disabled:!border-primary cursor-default" : ""
+                          }`}
+                        />
                       </div>
-                      <input
-                        type="radio"
-                        name="settlement_class"
-                        value={cls.code}
-                        checked={formData.settlement_class === cls.code}
-                        onChange={handleChange}
-                        className="radio radio-primary radio-xs"
-                      />
-                    </div>
-                    <span className="text-[11px] mt-1.5 font-semibold text-primary">
-                      {cls.brandPayout} Brand Payout &bull; {cls.bonus} Bonus Fund
-                    </span>
-                    <span className="text-[10px] text-base-content/60 mt-0.5">
-                      {cls.desc}
-                    </span>
-                  </label>
-                ))}
+                      <span className="text-[11px] mt-1.5 font-semibold text-primary">
+                        {cls.brandPayout} Brand Payout &bull; {cls.bonus} Bonus Fund
+                      </span>
+                      <span className="text-[10px] text-base-content/60 mt-0.5">
+                        {cls.desc}
+                      </span>
+                    </label>
+                  );
+                })}
               </div>
             </div>
 

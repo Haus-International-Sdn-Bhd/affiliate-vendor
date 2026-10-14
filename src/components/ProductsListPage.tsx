@@ -336,8 +336,8 @@ export default function ProductsListPage() {
             </Link>
           )}
 
-          {/* Add Product Button */}
-          {hasPermission('vendor.catalog.create') && (
+          {/* Add Product Button (Commented out - feature not ready yet) */}
+          {/* {hasPermission('vendor.catalog.create') && (
             <Link
               href="/vendor-portal/catalog/add-product"
               className="btn btn-primary btn-sm gap-2 text-white text-xs font-semibold shadow-sm"
@@ -345,7 +345,7 @@ export default function ProductsListPage() {
               <Plus className="h-4 w-4" />
               <span>Add Product</span>
             </Link>
-          )}
+          )} */}
         </div>
       </div>
 
@@ -544,18 +544,20 @@ export default function ProductsListPage() {
                         ? 'Try clearing some filters to see your inventory.'
                         : 'Start by adding your first product to the catalog.'}
                     </p>
-                    {activeFilterChips.length > 0 ? (
+                    {activeFilterChips.length > 0 && (
                       <button onClick={clearFilters} className="btn btn-sm btn-ghost text-primary mt-3">
                         Clear all filters
                       </button>
-                    ) : (
+                    )}
+                    {/* Add Product button commented out as feature is not ready yet */}
+                    {/* {activeFilterChips.length === 0 && (
                       <Link
                         href="/vendor-portal/catalog/add-product"
                         className="btn btn-sm btn-primary text-white mt-4"
                       >
                         <Plus className="w-4 h-4 mr-1" /> Add Product
                       </Link>
-                    )}
+                    )} */}
                   </td>
                 </tr>
               ) : (

@@ -1,5 +1,19 @@
+# ==============================================================================
+# Production Docker Compose for vf-vendor-dashboard (Coolify Ready)
+#
+# Coolify Deployment Guide:
+#   - Build Pack:       Docker Compose
+#   - Base Directory:   / (if repo is root) or vf-vendor-dashboard (if monorepo)
+#   - Compose File:     docker-compose.prod.yml
+#   - Exposed Port:     80 (Nginx static bundle)
+#   - Domain:           Configure FQDN in Coolify UI (e.g. https://vendor.vamoflex.com)
+#   - Note:             Do not set fixed container_name to allow Coolify zero-downtime rolling deploys.
+# ==============================================================================
+
+name: vf-vendor-dashboard
+
 services:
-  affiliate-vendor:
+  web:
     build:
       context: .
       dockerfile: Dockerfile
@@ -11,7 +25,21 @@ services:
         - APP_COUNTRY=${APP_COUNTRY:-MY}
         - APP_LANGUAGE=${APP_LANGUAGE:-en_MS}
         - TIMEZONE=${TIMEZONE:-Asia/Kuala_Lumpur}
-    image: affiliate-vendor:latest
+    image: vf-vendor-dashboard:latest
     restart: unless-stopped
+
     expose:
       - "80"
+
+    environment:
+      - NODE_ENV=production
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1/healthcheck || curl -f http://127.0.0.1/health || curl -f http://127.0.0.1/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+    labels:
+      - "coolify.managed=true"
