@@ -10,6 +10,7 @@ export type SettlementClass =
 export interface Brand {
   id: string;
   name: string;
+  company_name?: string;
   slug: string;
   logo_url?: string;
   description?: string;

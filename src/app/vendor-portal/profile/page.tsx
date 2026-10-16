@@ -271,6 +271,10 @@ export default function VendorProfilePage() {
                   <p className="font-semibold text-sm text-base-content">{activeBrand?.name || '-'}</p>
                 </div>
                 <div>
+                  <label className="text-base-content/60 font-medium block mb-1">Registered Company Name</label>
+                  <p className="font-semibold text-sm text-base-content">{activeBrand?.company_name || activeBrand?.name || '-'}</p>
+                </div>
+                <div>
                   <label className="text-base-content/60 font-medium block mb-1">Brand Identifier / Slug</label>
                   <p className="font-mono text-base-content">{activeBrand?.slug || '-'}</p>
                 </div>
