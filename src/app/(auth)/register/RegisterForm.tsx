@@ -151,7 +151,7 @@ export default function RegisterForm() {
           const brandPct = Math.round(Number(item.brand_share_percentage ?? item.brand_share ?? 50));
           const bonusPct = Math.round(Number(item.bonus_fund_percentage ?? item.bonus_fund ?? 35));
           const code = (item.code || item.class_code || "kelas_b").toLowerCase();
-          const isDef = Boolean(item.is_default || item.is_recommended || code === "kelas_b");
+          const isDef = Boolean(item.is_default || item.is_recommended);
           return {
             code,
             name: item.name || (code === "kelas_a" ? "Kelas A" : code === "kelas_c" ? "Kelas C" : "Kelas B"),

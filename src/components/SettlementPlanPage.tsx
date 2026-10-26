@@ -267,7 +267,7 @@ export default function SettlementPlanPage() {
             description:
               details.description ||
               `${brandShare}% Brand terima · Bonus sehingga ${bonusFund}%`,
-            isRecommended: Boolean(details.is_recommended || code === 'kelas_b'),
+            isRecommended: Boolean(details.is_recommended),
           };
         });
       }
