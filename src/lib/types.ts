@@ -1,4 +1,7 @@
 export type SettlementClass =
+  | 'pilihan_a'
+  | 'pilihan_b'
+  | 'pilihan_c'
   | 'kelas_a'
   | 'kelas_b'
   | 'kelas_c'
@@ -12,13 +15,24 @@ export interface Brand {
   name: string;
   company_name?: string;
   slug: string;
+  code?: string;
+  is_anchor?: boolean;
+  registration_no?: string;
+  ssm_registration_no?: string;
+  vendor_name?: string;
+  display_label?: string;
   logo_url?: string;
   description?: string;
   settlement_class?: SettlementClass;
   current_class?: SettlementClass;
+  settlement_model?: 'fixed' | 'prorata';
+  custom_platform_fee_percent?: number;
+  safety_deduction_cap_percent?: number;
+  prorate_platform_vouchers?: boolean;
   commission_class?: string;
   brand_share_percentage?: number;
   bonus_fund_percentage?: number;
+  affiliate_pool_percentage?: number;
   platform_fee_percentage?: number;
   contact_person?: string;
   contact_phone?: string;
@@ -177,4 +191,26 @@ export interface ClassChangeRequest {
   effective_cycle_date?: string;
   admin_notes?: string;
   created_at: string;
+}
+
+export interface CashbackRule {
+  id: string | number;
+  brand_id?: string | number;
+  name: string;
+  description?: string;
+  cashback_percent: number;
+  product_scope: 'all' | 'price_range' | 'selected_products';
+  min_price?: number;
+  max_price?: number;
+  selected_product_ids?: (string | number)[];
+  audience_scope: 'everyone' | 'selected_ranks' | 'selected_users';
+  selected_ranks?: string[];
+  selected_user_ids?: (string | number)[];
+  priority: number;
+  start_at?: string;
+  end_at?: string;
+  is_active: boolean;
+  status: 'pending_approval' | 'approved' | 'rejected';
+  created_by_role: 'admin' | 'vendor';
+  created_at?: string;
 }

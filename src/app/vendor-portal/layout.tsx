@@ -37,6 +37,8 @@ import PayoutCyclePill from "@/components/PayoutCyclePill";
 import HeaderClockAnnouncement from "@/components/HeaderClockAnnouncement";
 import QuickActionFab from "@/components/QuickActionFab";
 import OnboardingTour from "@/components/OnboardingTour";
+import BrandSwitcher from "@/components/BrandSwitcher";
+import AddBrandModal from "@/components/AddBrandModal";
 import { firebaseMessaging } from "@/lib/firebase-messaging";
 
 export default function DashboardLayout({
@@ -46,12 +48,16 @@ export default function DashboardLayout({
 }) {
   const {
     brand,
+    brands,
     user,
     isAuthenticated,
     isLoading,
     isSessionExpired,
     hasPermission,
     startOnboarding,
+    isAddBrandModalOpen,
+    openAddBrandModal,
+    closeAddBrandModal,
     logout,
     dismissSessionExpired,
   } = useAuth();
@@ -264,6 +270,14 @@ export default function DashboardLayout({
           icon: PlusCircle,
           permission: "vendor.catalog.create",
           dataTour: "nav-add-product",
+        },
+        {
+          name: "Customer Cashback",
+          href: "/vendor-portal/catalog/cashback",
+          aliases: ["/vendor-portal/catalog/cashback"],
+          icon: Sparkles,
+          permission: "vendor.catalog.view",
+          dataTour: "nav-cashback",
         },
         {
           name: "NCS Leaderboard",
@@ -547,42 +561,14 @@ export default function DashboardLayout({
           </Link>
         </div>
 
-        {/* Partner Brand Section (Below Border) */}
+        {/* Partner Brand Section (Below Border) with Brand Switcher */}
         {!isCollapsed ? (
           <div data-tour="brand-badge" className="p-4 border-b border-base-300 bg-base-100">
-            <div className="flex items-center gap-2.5 p-2.5 bg-base-200/80 rounded-xl border border-base-300/60">
-              <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Store className="w-4 h-4" />
-              </div>
-              <div className="overflow-hidden flex-1">
-                <h2 className="font-bold text-xs tracking-tight truncate text-base-content">
-                  {brand?.name || "Partner Brand"}
-                </h2>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <span
-                    className={`badge ${kelasInfo.color} badge-xs font-semibold text-[9px]`}
-                  >
-                    {kelasInfo.label}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <BrandSwitcher />
           </div>
         ) : (
-          <div data-tour="brand-badge" className="relative group p-3 border-b border-base-300 flex justify-center bg-base-100 cursor-default">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Store className="w-5 h-5" />
-            </div>
-            <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex flex-col z-[100] pointer-events-none bg-base-100 text-base-content border border-base-300 p-2.5 rounded-xl shadow-2xl min-w-[160px]">
-              <span className="text-xs font-bold truncate">
-                {brand?.name || "Partner Brand"}
-              </span>
-              <span
-                className={`badge ${kelasInfo.color} badge-xs font-semibold text-[9px] mt-1 w-fit`}
-              >
-                {kelasInfo.label}
-              </span>
-            </div>
+          <div data-tour="brand-badge" className="p-3 border-b border-base-300 flex justify-center bg-base-100">
+            <BrandSwitcher compact />
           </div>
         )}
 
@@ -853,6 +839,11 @@ export default function DashboardLayout({
           </div>
 
           <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+            {/* Topbar Multi-Brand Switcher */}
+            <div className="hidden md:block">
+              <BrandSwitcher />
+            </div>
+
             {/* Dynamic Weekly Payout Cycle Pill */}
             <div data-tour="payout-cycle">
               <PayoutCyclePill />
@@ -990,6 +981,27 @@ export default function DashboardLayout({
         {/* Page Content */}
         <main className="flex-1 p-6 sm:p-8">
           {renderBreadcrumbs()}
+          {!isLoading && brands && brands.length === 0 && (
+            <div className="mb-8 p-6 sm:p-8 bg-base-100 border border-primary/20 rounded-3xl shadow-sm text-center space-y-4 max-w-xl mx-auto animate-in fade-in">
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mx-auto">
+                <Store className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h2 className="text-lg font-black text-base-content">Welcome to Vamoflex Vendor Portal!</h2>
+                <p className="text-xs text-base-content/60 leading-relaxed max-w-md mx-auto">
+                  You have not registered any brands under your vendor account yet. Click below to add your first brand and start retailing on Vamoflex.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openAddBrandModal}
+                className="btn btn-primary btn-sm rounded-xl text-xs font-bold gap-2 px-4 shadow-sm"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>+ Add Your First Brand</span>
+              </button>
+            </div>
+          )}
           {children}
         </main>
 
@@ -1072,6 +1084,12 @@ export default function DashboardLayout({
         isOpen={isSessionExpired}
         onRedirectNow={dismissSessionExpired}
         redirectSeconds={15}
+      />
+
+      {/* Add Brand Modal (1 Vendor -> N Brands) */}
+      <AddBrandModal
+        isOpen={isAddBrandModalOpen}
+        onClose={closeAddBrandModal}
       />
     </div>
   );

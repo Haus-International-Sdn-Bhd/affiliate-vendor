@@ -25,6 +25,12 @@ interface AuthContextType {
   token: string | null;
   user: any | null;
   brand: Brand | null;
+  brands: Brand[];
+  activeBrandId: string | null;
+  switchBrand: (brandId: string) => Promise<void>;
+  isAddBrandModalOpen: boolean;
+  openAddBrandModal: () => void;
+  closeAddBrandModal: () => void;
   roles: string[];
   permissions: string[];
   vendorConfig: VendorPortalConfig;
@@ -60,6 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [brand, setBrand] = useState<Brand | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [activeBrandId, setActiveBrandId] = useState<string | null>(null);
+  const [isAddBrandModalOpen, setIsAddBrandModalOpen] = useState<boolean>(false);
   const [roles, setRoles] = useState<string[]>([]);
   const [permissions, setPermissions] = useState<string[]>([]);
   const [vendorConfig, setVendorConfig] = useState<VendorPortalConfig>({
@@ -75,6 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("vf_vendor_token");
     localStorage.removeItem("vf_vendor_user");
     localStorage.removeItem("vf_vendor_brand");
+    localStorage.removeItem("vf_vendor_brands");
+    localStorage.removeItem("vf_vendor_active_brand_id");
     localStorage.removeItem("vf_vendor_permissions");
     localStorage.removeItem("vf_vendor_config");
     localStorage.removeItem("vf_vendor_remember_me");
@@ -82,6 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     setUser(null);
     setBrand(null);
+    setBrands([]);
+    setActiveBrandId(null);
     setRoles([]);
     setPermissions([]);
     setIsSessionExpired(true);
@@ -130,7 +143,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await refreshModules();
 
       const data = await vendorApi.getProfile();
+      if (data.brands && Array.isArray(data.brands)) {
+        setBrands(data.brands);
+        localStorage.setItem("vf_vendor_brands", JSON.stringify(data.brands));
+      }
+      if (data.active_brand_id) {
+        setActiveBrandId(String(data.active_brand_id));
+        localStorage.setItem("vf_vendor_active_brand_id", String(data.active_brand_id));
+      }
       if (data.brand) {
+        if (!data.active_brand_id) {
+          setActiveBrandId(String(data.brand.id));
+          localStorage.setItem("vf_vendor_active_brand_id", String(data.brand.id));
+        }
         const brandWithClasses = {
           ...data.brand,
           available_classes: data.available_classes || data.brand.available_classes || null,
@@ -165,6 +190,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
   }, [refreshModules, triggerSessionExpired]);
+
+  const openAddBrandModal = () => setIsAddBrandModalOpen(true);
+  const closeAddBrandModal = () => setIsAddBrandModalOpen(false);
+
+  const switchBrand = React.useCallback(async (brandId: string) => {
+    localStorage.setItem("vf_vendor_active_brand_id", String(brandId));
+    setActiveBrandId(String(brandId));
+    const targetBrand = brands.find((b) => String(b.id) === String(brandId));
+    if (targetBrand) {
+      setBrand(targetBrand);
+      localStorage.setItem("vf_vendor_brand", JSON.stringify(targetBrand));
+    }
+    await refreshBrand();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("vf:brand-switched", { detail: { brandId } }));
+    }
+  }, [brands, refreshBrand]);
 
   const startOnboarding = () => {
     setIsOnboardingOpen(true);
@@ -213,6 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           try {
             const savedUser = localStorage.getItem("vf_vendor_user");
             const savedBrand = localStorage.getItem("vf_vendor_brand");
+            const savedBrands = localStorage.getItem("vf_vendor_brands");
+            const savedActiveBrandId = localStorage.getItem("vf_vendor_active_brand_id");
             const savedPermissions = localStorage.getItem("vf_vendor_permissions");
             const savedConfig = localStorage.getItem("vf_vendor_config");
             if (savedUser) {
@@ -223,6 +267,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               }
             }
             if (savedBrand) setBrand(JSON.parse(savedBrand));
+        if (savedBrands) {
+          try { setBrands(JSON.parse(savedBrands)); } catch {}
+        }
+        if (savedActiveBrandId) setActiveBrandId(savedActiveBrandId);
             if (savedPermissions) setPermissions(JSON.parse(savedPermissions));
             if (savedConfig) setVendorConfig(JSON.parse(savedConfig));
           } catch {
@@ -295,6 +343,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const savedToken = localStorage.getItem("vf_vendor_token");
       const savedUser = localStorage.getItem("vf_vendor_user");
       const savedBrand = localStorage.getItem("vf_vendor_brand");
+      const savedBrands = localStorage.getItem("vf_vendor_brands");
+      const savedActiveBrandId = localStorage.getItem("vf_vendor_active_brand_id");
       const savedPermissions = localStorage.getItem("vf_vendor_permissions");
       const savedConfig = localStorage.getItem("vf_vendor_config");
 
@@ -312,6 +362,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
         if (savedBrand) setBrand(JSON.parse(savedBrand));
+        if (savedBrands) {
+          try { setBrands(JSON.parse(savedBrands)); } catch {}
+        }
+        if (savedActiveBrandId) setActiveBrandId(savedActiveBrandId);
         if (savedPermissions) setPermissions(JSON.parse(savedPermissions));
         if (savedConfig) setVendorConfig(JSON.parse(savedConfig));
         setIsLoading(false);
@@ -371,6 +425,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("vf_vendor_refresh_token");
     localStorage.removeItem("vf_vendor_user");
     localStorage.removeItem("vf_vendor_brand");
+    localStorage.removeItem("vf_vendor_brands");
+    localStorage.removeItem("vf_vendor_active_brand_id");
     localStorage.removeItem("vf_vendor_permissions");
     localStorage.removeItem("vf_vendor_config");
     localStorage.removeItem("vf_vendor_remember_me");
@@ -378,6 +434,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setToken(null);
     setUser(null);
     setBrand(null);
+    setBrands([]);
+    setActiveBrandId(null);
     setRoles([]);
     setPermissions([]);
     setIsSessionExpired(false);
@@ -429,6 +487,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         token,
         user,
         brand,
+        brands,
+        activeBrandId,
+        switchBrand,
+        isAddBrandModalOpen,
+        openAddBrandModal,
+        closeAddBrandModal,
         roles,
         permissions,
         vendorConfig,

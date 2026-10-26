@@ -122,6 +122,13 @@ export default function ProductsListPage() {
 
   useEffect(() => {
     fetchProducts();
+    const handleBrandSwitched = () => {
+      fetchProducts();
+    };
+    window.addEventListener('vf:brand-switched', handleBrandSwitched);
+    return () => {
+      window.removeEventListener('vf:brand-switched', handleBrandSwitched);
+    };
   }, []);
 
   const formatCurrency = (val?: number) => {
@@ -597,7 +604,7 @@ export default function ProductsListPage() {
                             </div>
                           </div>
                           <div className="min-w-0">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-primary/75 block leading-tight mb-0.5 truncate max-w-[220px]">
+                            <span className="badge badge-sm badge-outline text-[10px] font-bold border-primary/30 text-primary bg-primary/5 mb-1 truncate max-w-[220px]">
                               {product.brand_name}
                             </span>
                             <button

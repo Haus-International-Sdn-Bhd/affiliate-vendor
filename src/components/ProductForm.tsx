@@ -372,6 +372,22 @@ export default function ProductForm({ initialData, isEditing = false }: ProductF
                   />
                 </div>
               </div>
+
+              {/* Cashback Preview Notice */}
+              <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="text-base-content/80 font-medium">
+                    Eligible for <strong>2.0% – 5.0% Customer Cashback</strong> into VamoWallet upon order payment.
+                  </span>
+                </div>
+                <Link
+                  href="/vendor-portal/catalog/cashback"
+                  className="link link-primary font-bold hover:underline shrink-0 text-[11px]"
+                >
+                  Configure Rules →
+                </Link>
+              </div>
             </div>
           </div>
 

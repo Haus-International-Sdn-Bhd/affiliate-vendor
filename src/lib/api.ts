@@ -92,6 +92,10 @@ apiClient.interceptors.request.use((config) => {
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    const activeBrandId = localStorage.getItem("vf_vendor_active_brand_id");
+    if (activeBrandId) {
+      config.headers["X-Brand-Id"] = activeBrandId;
+    }
   }
   return config;
 });
@@ -111,6 +115,10 @@ authClient.interceptors.request.use((config) => {
     const token = localStorage.getItem("vf_vendor_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const activeBrandId = localStorage.getItem("vf_vendor_active_brand_id");
+    if (activeBrandId) {
+      config.headers["X-Brand-Id"] = activeBrandId;
     }
   }
   return config;
@@ -311,6 +319,22 @@ export const vendorApi = {
     return response.data;
   },
 
+  // Brands
+  getBrands: async () => {
+    const response = await apiClient.get("/v1/vendor/portal/brands");
+    return response.data;
+  },
+
+  getBrandTemplate: async () => {
+    const response = await apiClient.get("/v1/vendor/portal/brands/template");
+    return response.data;
+  },
+
+  createBrand: async (data: any) => {
+    const response = await apiClient.post("/v1/vendor/portal/brands", data);
+    return response.data;
+  },
+
   // Products
   getProducts: async (params?: {
     page?: number;
@@ -456,6 +480,27 @@ export const vendorApi = {
     } catch {
       return [];
     }
+  },
+
+  // Customer Cashback Rules (Brand-scoped)
+  getCashbackRules: async (params?: any) => {
+    const response = await apiClient.get("/v1/vendor/portal/cashback-rules", { params });
+    return response.data;
+  },
+
+  createCashbackRule: async (data: any) => {
+    const response = await apiClient.post("/v1/vendor/portal/cashback-rules", data);
+    return response.data;
+  },
+
+  updateCashbackRule: async (id: string | number, data: any) => {
+    const response = await apiClient.put(`/v1/vendor/portal/cashback-rules/${id}`, data);
+    return response.data;
+  },
+
+  deleteCashbackRule: async (id: string | number) => {
+    const response = await apiClient.delete(`/v1/vendor/portal/cashback-rules/${id}`);
+    return response.data;
   },
 };
 

@@ -29,7 +29,7 @@ export default function SettlementPlanPage() {
 
   const [pendingChange, setPendingChange] = useState<any | null>(null);
   const [loadingChange, setLoadingChange] = useState(true);
-  const [requestedClass, setRequestedClass] = useState<SettlementClass>('kelas_b');
+  const [requestedClass, setRequestedClass] = useState<SettlementClass>('pilihan_b');
   const [changeReason, setChangeReason] = useState('');
   const [submittingChange, setSubmittingChange] = useState(false);
   const [changeSuccess, setChangeSuccess] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export default function SettlementPlanPage() {
 
   const currentBrandClass = (brand?.current_class ||
     brand?.settlement_class ||
-    'kelas_b') as SettlementClass;
+    'pilihan_b') as SettlementClass;
 
   useEffect(() => {
     fetchClassChangeStatus();
@@ -69,7 +69,7 @@ export default function SettlementPlanPage() {
     if (brand) {
       const cls = (brand.current_class ||
         brand.settlement_class ||
-        'kelas_b') as SettlementClass;
+        'pilihan_b') as SettlementClass;
       setRequestedClass(cls);
     }
   }, [brand]);
@@ -88,13 +88,13 @@ export default function SettlementPlanPage() {
     hasPermission('vendor.settlement_plan.apply');
 
   const getClassName = (cls?: string) => {
-    if (!cls) return 'Kelas B (50% Brand Share)';
+    if (!cls) return 'Pilihan B (68% Brand Net)';
     const found = plans.find((p) => p.id === cls);
     if (found) {
-      return `${found.name} (${found.brandShare}% Brand Share)`;
+      return `${found.name} (${found.brandShare}% Brand Net)`;
     }
-    const raw = cls.replace('kelas_', '').toUpperCase();
-    return `Kelas ${raw}`;
+    const raw = cls.replace('kelas_', '').replace('pilihan_', '').toUpperCase();
+    return `Pilihan ${raw}`;
   };
 
   const formatDate = (dateStr?: string) => {
@@ -190,63 +190,33 @@ export default function SettlementPlanPage() {
 
   const defaultPlans = [
     {
-      id: 'kelas_a',
-      name: 'Kelas A',
-      brandShare: 45,
-      bonusFund: 40,
-      platformFee: 15,
+      id: 'pilihan_a',
+      name: 'Pilihan A',
+      brandShare: 73,
+      bonusFund: 15,
+      platformFee: 10,
       description:
-        'Maximum bonus fund allocation for aggressive affiliate distribution and fast product velocity.',
+        '73% Guaranteed Brand Net Payout · 15% Core Affiliate Incentive Pool · 2% Customer Cashback.',
       isRecommended: false,
     },
     {
-      id: 'kelas_b',
-      name: 'Kelas B',
-      brandShare: 50,
-      bonusFund: 35,
-      platformFee: 15,
+      id: 'pilihan_b',
+      name: 'Pilihan B',
+      brandShare: 68,
+      bonusFund: 20,
+      platformFee: 10,
       description:
-        'Balanced 50/50 split between brand net margin and affiliate network growth.',
+        'Standard Balanced Tier: 68% Brand Net Payout · 20% Affiliate Pool · 2% Customer Cashback (Recommended).',
       isRecommended: true,
     },
     {
-      id: 'kelas_c',
-      name: 'Kelas C',
-      brandShare: 55,
-      bonusFund: 30,
-      platformFee: 15,
-      description:
-        'Higher direct brand margin with solid core affiliate commission rewards.',
-      isRecommended: false,
-    },
-    {
-      id: 'kelas_d',
-      name: 'Kelas D',
-      brandShare: 60,
+      id: 'pilihan_c',
+      name: 'Pilihan C',
+      brandShare: 63,
       bonusFund: 25,
-      platformFee: 15,
+      platformFee: 10,
       description:
-        'High brand net margin tier with 25% allocated to high-performer bonus rewards.',
-      isRecommended: false,
-    },
-    {
-      id: 'kelas_e',
-      name: 'Kelas E',
-      brandShare: 65,
-      bonusFund: 20,
-      platformFee: 15,
-      description:
-        'Optimized for brands with strict unit costs while preserving standard 15% platform fee.',
-      isRecommended: false,
-    },
-    {
-      id: 'kelas_f',
-      name: 'Kelas F',
-      brandShare: 70,
-      bonusFund: 15,
-      platformFee: 15,
-      description:
-        'Maximum 70% direct brand retention tier with 15% core affiliate bonus pool.',
+        'High Incentive Tier: 63% Brand Net Payout · Maximum 25% Affiliate Pool for maximum promotion velocity.',
       isRecommended: false,
     },
   ];
@@ -308,9 +278,14 @@ export default function SettlementPlanPage() {
             <span className="badge badge-primary badge-md font-bold uppercase">
               {currentBrandClass.replace('_', ' ')} (
               {brand?.brand_share_percentage ||
-                (currentBrandClass === 'kelas_a' ? 45 : currentBrandClass === 'kelas_c' ? 55 : 50)}
+                (currentBrandClass === 'pilihan_a' || currentBrandClass === 'kelas_a' ? 73 : currentBrandClass === 'pilihan_c' || currentBrandClass === 'kelas_c' ? 63 : 68)}
               % Net Share)
             </span>
+            {brand?.settlement_model === 'prorata' ? (
+              <span className="badge badge-warning badge-sm font-semibold" title="Model B: Prorated Actual Cost Model (Safety Cap: 35%)">Prorata Actual</span>
+            ) : (
+              <span className="badge badge-ghost badge-sm font-semibold" title="Model A: Guaranteed Fixed Payout Rate">Fixed Rate</span>
+            )}
           </div>
 
           <Link
