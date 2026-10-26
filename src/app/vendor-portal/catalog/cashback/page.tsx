@@ -125,8 +125,8 @@ export default function VendorCashbackPage() {
       return;
     }
 
-    if (formPercent < 2.0 || formPercent > 5.0) {
-      setErrorMessage('Cashback percent must be between 2.0% and 5.0%.');
+    if (formPercent < 0.1 || formPercent > 20.0) {
+      setErrorMessage('Cashback percent must be between 0.1% and 20.0%.');
       return;
     }
 
@@ -538,32 +538,63 @@ export default function VendorCashbackPage() {
                 />
               </div>
 
-              {/* Cashback Percentage (Clamped 2% - 5%) */}
-              <div className="space-y-2 rounded-xl bg-base-200/50 border border-base-300 p-4">
-                <div className="flex items-center justify-between">
-                  <label className="label py-0 font-bold text-base-content">
-                    Cashback Reward Rate: <span className="text-primary text-sm font-black ml-1">{formPercent.toFixed(1)}%</span>
-                  </label>
-                  {formPercent <= 3.0 ? (
-                    <span className="badge badge-success badge-xs font-bold">Auto-Approved (≤3%)</span>
-                  ) : (
-                    <span className="badge badge-warning badge-xs font-bold">Review Required (&gt;3%)</span>
-                  )}
+              {/* Cashback Percentage (Starts from 0.1% to 10%+, manual input & slider) */}
+              <div className="space-y-3 rounded-xl bg-base-200/50 border border-base-300 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <label className="label py-0 font-bold text-base-content text-xs">
+                      Cashback Reward Rate *
+                    </label>
+                    <p className="text-[10px] text-base-content/60">Type exact percent or drag slider</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      max="20.0"
+                      value={formPercent}
+                      onChange={(e) => setFormPercent(parseFloat(e.target.value) || 0)}
+                      className="input input-sm input-bordered font-black text-sm text-primary w-20 text-right rounded-lg"
+                    />
+                    <span className="text-sm font-bold text-base-content/70">%</span>
+                    {formPercent <= 3.0 ? (
+                      <span className="badge badge-success badge-xs font-bold">Auto (≤3%)</span>
+                    ) : (
+                      <span className="badge badge-warning badge-xs font-bold">Review (&gt;3%)</span>
+                    )}
+                  </div>
                 </div>
 
                 <input
                   type="range"
-                  min="2.0"
-                  max="5.0"
+                  min="0.1"
+                  max="10.0"
                   step="0.1"
                   value={formPercent}
                   onChange={(e) => setFormPercent(parseFloat(e.target.value))}
-                  className="range range-primary range-sm"
+                  className="range range-primary range-xs"
                 />
                 <div className="flex justify-between text-[10px] text-base-content/50 font-mono">
-                  <span>2.0% (Min)</span>
+                  <span>0.1% (Min)</span>
                   <span>3.0% (Auto-threshold)</span>
-                  <span>5.0% (Max)</span>
+                  <span>5.0%</span>
+                  <span>10.0% (Max slider)</span>
+                </div>
+
+                {/* Presets */}
+                <div className="flex flex-wrap items-center gap-1 pt-1">
+                  <span className="text-[10px] font-semibold text-base-content/50 uppercase mr-1">Presets:</span>
+                  {[0.1, 0.5, 1.0, 2.0, 3.0, 5.0, 9.0].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setFormPercent(preset)}
+                      className={`btn btn-xs rounded-md ${formPercent === preset ? 'btn-primary' : 'btn-ghost'}`}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
                 </div>
               </div>
 
