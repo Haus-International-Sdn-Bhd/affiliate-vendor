@@ -42,7 +42,9 @@ export default function VendorCashbackPage() {
   const [formName, setFormName] = useState('');
   const [formDescription, setFormDescription] = useState('');
   const [formPercent, setFormPercent] = useState<number>(2.5);
-  const [formProductScope, setFormProductScope] = useState<'all' | 'price_range' | 'selected_products'>('all');
+  const [formProductScope, setFormProductScope] = useState<'all' | 'category' | 'price_range' | 'selected_products'>('all');
+  const [formCategoryId, setFormCategoryId] = useState<number | ''>('');
+  const [formMinOrderSpend, setFormMinOrderSpend] = useState<number | ''>('');
   const [formMinPrice, setFormMinPrice] = useState<number | ''>('');
   const [formMaxPrice, setFormMaxPrice] = useState<number | ''>('');
   const [formAudienceScope, setFormAudienceScope] = useState<'everyone' | 'selected_ranks'>('everyone');
@@ -83,6 +85,8 @@ export default function VendorCashbackPage() {
     setFormDescription('');
     setFormPercent(2.5);
     setFormProductScope('all');
+    setFormCategoryId('');
+    setFormMinOrderSpend('');
     setFormMinPrice('');
     setFormMaxPrice('');
     setFormAudienceScope('everyone');
@@ -93,17 +97,19 @@ export default function VendorCashbackPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (rule: CashbackRule) => {
+  const openEditModal = (rule: any) => {
     setIsEditMode(true);
     setEditingId(rule.id);
     setFormName(rule.name);
     setFormDescription(rule.description || '');
-    setFormPercent(Number(rule.cashback_percent) || 2.0);
+    setFormPercent(Number(rule.cashback_percent || rule.percent) || 2.0);
     setFormProductScope(rule.product_scope || 'all');
+    setFormCategoryId(rule.category_id || '');
+    setFormMinOrderSpend(rule.min_order_spend !== undefined && rule.min_order_spend !== null ? rule.min_order_spend : '');
     setFormMinPrice(rule.min_price !== undefined && rule.min_price !== null ? rule.min_price : '');
     setFormMaxPrice(rule.max_price !== undefined && rule.max_price !== null ? rule.max_price : '');
     setFormAudienceScope((rule.audience_scope as any) || 'everyone');
-    setFormRanks(rule.selected_ranks || []);
+    setFormRanks(rule.selected_ranks || rule.selected_ranks_json || []);
     setFormPriority(rule.priority || 10);
     setFormIsActive(rule.is_active);
     setErrorMessage(null);
@@ -136,12 +142,16 @@ export default function VendorCashbackPage() {
     const payload: any = {
       name: formName.trim(),
       description: formDescription.trim(),
+      percent: formPercent,
       cashback_percent: formPercent,
       product_scope: formProductScope,
+      category_id: formProductScope === 'category' && formCategoryId !== '' ? Number(formCategoryId) : null,
+      min_order_spend: formMinOrderSpend !== '' ? Number(formMinOrderSpend) : null,
       min_price: formMinPrice !== '' ? Number(formMinPrice) : null,
       max_price: formMaxPrice !== '' ? Number(formMaxPrice) : null,
       audience_scope: formAudienceScope,
       selected_ranks: formAudienceScope === 'selected_ranks' ? formRanks : null,
+      selected_ranks_json: formAudienceScope === 'selected_ranks' ? formRanks : null,
       priority: Number(formPriority) || 10,
       is_active: formIsActive,
     };
@@ -601,7 +611,7 @@ export default function VendorCashbackPage() {
               {/* Product Scope (WHAT) */}
               <div className="space-y-2">
                 <label className="label py-0 font-bold text-base-content">Product Scope (WHAT)</label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                   <label
                     className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer ${formProductScope === 'all' ? 'border-primary bg-primary/5' : 'border-base-300'}`}
                   >
@@ -612,7 +622,20 @@ export default function VendorCashbackPage() {
                       onChange={() => setFormProductScope('all')}
                       className="radio radio-primary radio-xs"
                     />
-                    <span className="font-semibold text-xs">All Brand Products</span>
+                    <span className="font-semibold text-xs">All Products</span>
+                  </label>
+
+                  <label
+                    className={`flex items-center gap-2 p-2.5 rounded-lg border cursor-pointer ${formProductScope === 'category' ? 'border-primary bg-primary/5' : 'border-base-300'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="productScope"
+                      checked={formProductScope === 'category'}
+                      onChange={() => setFormProductScope('category')}
+                      className="radio radio-primary radio-xs"
+                    />
+                    <span className="font-semibold text-xs">Category</span>
                   </label>
 
                   <label
@@ -625,9 +648,23 @@ export default function VendorCashbackPage() {
                       onChange={() => setFormProductScope('price_range')}
                       className="radio radio-primary radio-xs"
                     />
-                    <span className="font-semibold text-xs">Unit Price Range</span>
+                    <span className="font-semibold text-xs">Price Range</span>
                   </label>
                 </div>
+
+                {formProductScope === 'category' && (
+                  <div className="pt-2">
+                    <span className="text-[10px] text-base-content/60 font-semibold">Category ID / Numerical Key</span>
+                    <input
+                      type="number"
+                      placeholder="e.g. 5"
+                      value={formCategoryId}
+                      onChange={(e) => setFormCategoryId(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="input input-sm input-bordered w-full text-xs"
+                    />
+                    <span className="text-[10px] text-base-content/50">Rewards all products under this catalog category</span>
+                  </div>
+                )}
 
                 {formProductScope === 'price_range' && (
                   <div className="grid grid-cols-2 gap-2 pt-2">
@@ -653,6 +690,21 @@ export default function VendorCashbackPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Minimum Order Spend */}
+                <div className="pt-1">
+                  <span className="text-[10px] text-base-content/60 font-semibold">Minimum Order Spend Threshold (RM, Optional)</span>
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-base-content/50">RM</span>
+                    <input
+                      type="number"
+                      placeholder="0.00 (Leave empty for no order minimum)"
+                      value={formMinOrderSpend}
+                      onChange={(e) => setFormMinOrderSpend(e.target.value === '' ? '' : Number(e.target.value))}
+                      className="input input-sm input-bordered w-full pl-9 text-xs"
+                    />
+                  </div>
+                </div>
               </div>
 
               {/* Target Audience (WHO) */}

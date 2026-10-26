@@ -38,6 +38,25 @@ export default function SettlementPlanPage() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [apiAvailableClasses, setApiAvailableClasses] = useState<any | null>(null);
 
+  // Dual-Model ROI Simulator State
+  const [simGmv, setSimGmv] = useState<number>(50000);
+  const [simPackage, setSimPackage] = useState<string>('pilihan_b');
+  const [simPlatformFee, setSimPlatformFee] = useState<number>(10.0);
+  const [simAffiliatePool, setSimAffiliatePool] = useState<number>(15.0);
+  const [simCashback, setSimCashback] = useState<number>(2.0);
+
+  const simFixedRate = simPackage === 'pilihan_a' ? 73 : simPackage === 'pilihan_c' ? 63 : 68;
+  const simModelAPayout = simGmv * (simFixedRate / 100);
+  const simModelADeductions = simGmv * ((100 - simFixedRate) / 100);
+
+  const simRawDeductions = simPlatformFee + simAffiliatePool + simCashback;
+  const simEffectiveDeductions = Math.min(simRawDeductions, 37);
+  const simCapAbsorbedPercent = Math.max(0, simRawDeductions - 37);
+  const simCapAbsorbedAmount = simGmv * (simCapAbsorbedPercent / 100);
+  const simModelBPayout = simGmv * ((100 - simEffectiveDeductions) / 100);
+  const simModelBDeductions = simGmv * (simEffectiveDeductions / 100);
+  const simPayoutDiff = simModelBPayout - simModelAPayout;
+
   const fetchClassChangeStatus = async () => {
     try {
       setLoadingChange(true);
@@ -570,6 +589,227 @@ export default function SettlementPlanPage() {
             </div>
           );
         })}
+      </div>
+
+      {/* Dual-Model Payout ROI Simulator Widget */}
+      <div className="card bg-base-100 border border-primary/20 shadow-md p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-base-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black">
+              <Sparkles className="w-5 h-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-base-content flex items-center gap-2">
+                <span>Dual-Model Payout ROI Simulator</span>
+                <span className="badge badge-primary badge-xs font-semibold">Interactive</span>
+              </h3>
+              <p className="text-xs text-base-content/60">
+                Model your net vendor payout under Fixed Package (73%/68%/63%) vs Prorata Actual Cost with 37% Safety Deduction Cap
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Input Controls */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 bg-base-200/50 p-4 rounded-2xl border border-base-300">
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+              Monthly GMV (RM)
+            </label>
+            <input
+              type="number"
+              step={5000}
+              min={1000}
+              value={simGmv}
+              onChange={(e) => setSimGmv(Math.max(1000, Number(e.target.value) || 0))}
+              className="input input-sm input-bordered w-full font-black text-primary rounded-xl"
+            />
+            <div className="flex gap-1 pt-1">
+              {[20000, 50000, 100000].map((val) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setSimGmv(val)}
+                  className="btn btn-ghost btn-xs text-[10px] px-1.5 h-5 min-h-0"
+                >
+                  {val / 1000}k
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+              Model A Package
+            </label>
+            <select
+              value={simPackage}
+              onChange={(e) => setSimPackage(e.target.value)}
+              className="select select-sm select-bordered w-full font-bold rounded-xl"
+            >
+              <option value="pilihan_a">Pilihan A (73% Net Share)</option>
+              <option value="pilihan_b">Pilihan B (68% Net Share)</option>
+              <option value="pilihan_c">Pilihan C (63% Net Share)</option>
+            </select>
+            <span className="text-[10px] text-base-content/50 block pt-1">
+              Fixed deduction: {100 - simFixedRate}%
+            </span>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+              Platform Fee %
+            </label>
+            <input
+              type="number"
+              step={0.5}
+              min={5}
+              max={20}
+              value={simPlatformFee}
+              onChange={(e) => setSimPlatformFee(Number(e.target.value) || 10)}
+              className="input input-sm input-bordered w-full font-bold rounded-xl"
+            />
+            <span className="text-[10px] text-base-content/50 block pt-1">Standard: 10.0%</span>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+              Affiliate Comm %
+            </label>
+            <input
+              type="number"
+              step={1}
+              min={0}
+              max={30}
+              value={simAffiliatePool}
+              onChange={(e) => setSimAffiliatePool(Number(e.target.value) || 0)}
+              className="input input-sm input-bordered w-full font-bold rounded-xl"
+            />
+            <span className="text-[10px] text-base-content/50 block pt-1">Actual prorated pool</span>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-base-content/70">
+              Customer Cashback %
+            </label>
+            <input
+              type="number"
+              step={0.5}
+              min={0}
+              max={15}
+              value={simCashback}
+              onChange={(e) => setSimCashback(Number(e.target.value) || 0)}
+              className="input input-sm input-bordered w-full font-bold rounded-xl"
+            />
+            <span className="text-[10px] text-base-content/50 block pt-1">Issued to buyers</span>
+          </div>
+        </div>
+
+        {/* Comparison Side-by-Side */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Model A Card */}
+          <div className="rounded-2xl border border-base-300 bg-base-100 p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="badge badge-outline badge-sm font-semibold">Model A: Fixed Package</span>
+                <h4 className="font-bold text-base text-base-content mt-1">
+                  Guaranteed {simFixedRate}% Brand Payout
+                </h4>
+              </div>
+              <span className="text-xs font-bold text-base-content/60 uppercase">{simPackage.replace('_', ' ')}</span>
+            </div>
+
+            <div className="bg-base-200/50 p-4 rounded-xl space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-base-content/70">Gross Sales GMV:</span>
+                <span className="font-bold text-base-content">{formatCurrency(simGmv)}</span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-base-content/70">Package Deductions ({100 - simFixedRate}%):</span>
+                <span className="font-semibold text-error">-{formatCurrency(simModelADeductions)}</span>
+              </div>
+              <div className="divider my-1"></div>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-sm text-base-content">Vendor Net Payout:</span>
+                <span className="font-black text-xl text-primary">{formatCurrency(simModelAPayout)}</span>
+              </div>
+            </div>
+            <p className="text-[11px] text-base-content/50">
+              Fixed rate certainty. No deductions fluctuations.
+            </p>
+          </div>
+
+          {/* Model B Card */}
+          <div
+            className={`rounded-2xl border p-5 space-y-3 transition-all ${
+              simPayoutDiff >= 0
+                ? 'border-emerald-500/40 bg-emerald-500/[0.03]'
+                : 'border-base-300 bg-base-100'
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="badge badge-primary badge-sm font-semibold">Model B: Prorata Actual</span>
+                  {simCapAbsorbedPercent > 0 && (
+                    <span className="badge badge-warning badge-xs font-bold">Cap Active</span>
+                  )}
+                </div>
+                <h4 className="font-bold text-base text-base-content mt-1">
+                  Effective {(100 - simEffectiveDeductions).toFixed(1)}% Brand Payout
+                </h4>
+              </div>
+              <span
+                className={`text-xs font-bold ${
+                  simPayoutDiff >= 0 ? 'text-emerald-600' : 'text-error'
+                }`}
+              >
+                {simPayoutDiff >= 0
+                  ? `+${formatCurrency(simPayoutDiff)} Higher`
+                  : `-${formatCurrency(-simPayoutDiff)} Lower`}
+              </span>
+            </div>
+
+            <div className="bg-base-200/50 p-4 rounded-xl space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-base-content/70">Raw Deductions ({simRawDeductions.toFixed(1)}%):</span>
+                <span className="font-semibold text-base-content">
+                  {formatCurrency((simGmv * simRawDeductions) / 100)}
+                </span>
+              </div>
+
+              {simCapAbsorbedPercent > 0 && (
+                <div className="flex justify-between items-center text-xs text-amber-600 font-semibold">
+                  <span>Safety Cap Absorbed (37% Ceiling):</span>
+                  <span>+{formatCurrency(simCapAbsorbedAmount)} ({simCapAbsorbedPercent.toFixed(1)}%)</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-base-content/70">Effective Deductions ({simEffectiveDeductions.toFixed(1)}%):</span>
+                <span className="font-semibold text-error">-{formatCurrency(simModelBDeductions)}</span>
+              </div>
+
+              <div className="divider my-1"></div>
+              <div className="flex justify-between items-center">
+                <span className="font-bold text-sm text-base-content">Vendor Net Payout:</span>
+                <span className="font-black text-xl text-emerald-600">
+                  {formatCurrency(simModelBPayout)}
+                </span>
+              </div>
+            </div>
+
+            {simCapAbsorbedPercent > 0 ? (
+              <p className="text-[11px] text-amber-600 font-medium">
+                Safety Cap active: platform absorbs excess costs so your net share never drops below 63%.
+              </p>
+            ) : (
+              <p className="text-[11px] text-base-content/50">
+                You retain all margin savings when cashback and commissions are optimized below cap.
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Change Application Form */}
