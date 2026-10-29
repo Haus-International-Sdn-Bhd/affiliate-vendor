@@ -18,7 +18,7 @@ import {
 
 export default function PrivacyNoticePage() {
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Header Banner */}
       <div className="card bg-gradient-to-r from-neutral to-neutral-focus text-neutral-content shadow-xl overflow-hidden relative border border-neutral/30">
         <div className="card-body p-6 sm:p-8 relative z-[1]">

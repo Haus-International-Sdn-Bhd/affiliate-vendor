@@ -20,7 +20,7 @@ import {
 
 export default function PdpaNoticePage() {
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Header Banner */}
       <div className="card bg-gradient-to-r from-primary to-primary/85 text-primary-content shadow-xl overflow-hidden relative border border-primary/20">
         <div className="card-body p-6 sm:p-8 relative z-[1]">

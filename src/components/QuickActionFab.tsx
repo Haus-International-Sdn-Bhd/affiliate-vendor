@@ -72,6 +72,14 @@ export default function QuickActionFab() {
       permission: 'vendor.catalog.create',
     },
     {
+      label: 'Partner Brands',
+      desc: 'Switch & register new brands',
+      href: '/vendor-portal/brands',
+      icon: Store,
+      color: 'text-accent bg-accent/10',
+      badge: 'Multi-Brand',
+    },
+    {
       label: 'Settlement Plans',
       desc: 'Review rates and adjust tier',
       href: '/vendor-portal/commerce-hub/settlement-plan',

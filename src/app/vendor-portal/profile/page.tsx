@@ -21,6 +21,7 @@ import {
   Copy,
   ExternalLink,
   Check,
+  FileText,
 } from 'lucide-react';
 
 export default function VendorProfilePage() {
@@ -62,7 +63,7 @@ export default function VendorProfilePage() {
     0;
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6 w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -105,13 +106,26 @@ export default function VendorProfilePage() {
                 {activeBrand?.slug ? `@${activeBrand.slug}` : 'Brand Partner'}
               </p>
 
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-4 flex-wrap justify-center">
                 <span className="badge badge-primary font-bold text-xs uppercase">
                   {activeBrand?.current_class ? activeBrand.current_class.replace('_', ' ') : 'Kelas B'}
                 </span>
                 <span className="badge badge-outline text-xs">
                   {activeBrand?.status === 'active' ? 'Active' : 'Pending'}
                 </span>
+                {(activeBrand?.has_halal_cert || activeBrand?.halal_info?.has_cert) && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-xs"
+                    style={{
+                      backgroundColor: activeBrand.halal_info?.badge_color || '#FEF08A',
+                      color: activeBrand.halal_info?.badge_text_color || '#854D0E',
+                      borderColor: 'rgba(0,0,0,0.08)',
+                    }}
+                  >
+                    <Award className="w-3 h-3 shrink-0" />
+                    <span>{activeBrand.halal_info?.label || 'Halal Certified'}</span>
+                  </span>
+                )}
               </div>
 
               <div className="divider my-4"></div>
@@ -285,6 +299,111 @@ export default function VendorProfilePage() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* Halal Certification Card */}
+          <div className="card bg-base-100 border border-base-300 shadow-sm">
+            <div className="card-body p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-base-300 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div>
+                    <h3 className="font-bold text-sm text-base-content">Halal Certification & Compliance</h3>
+                    <p className="text-[11px] text-base-content/60">Verified regulatory credentials and halal authority recognition</p>
+                  </div>
+                </div>
+                <Link
+                  href="/vendor-portal/profile/edit"
+                  className="btn btn-ghost btn-xs text-primary gap-1 font-semibold"
+                >
+                  <Edit className="w-3 h-3" />
+                  <span>Edit</span>
+                </Link>
+              </div>
+
+              {(activeBrand?.has_halal_cert || activeBrand?.halal_info?.has_cert) ? (
+                <div className="space-y-4 text-xs">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-emerald-500/5 border border-emerald-500/20">
+                    <div className="flex items-center gap-2.5">
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold shadow-xs border"
+                        style={{
+                          backgroundColor: activeBrand.halal_info?.badge_color || '#FEF08A',
+                          color: activeBrand.halal_info?.badge_text_color || '#854D0E',
+                          borderColor: 'rgba(0,0,0,0.08)',
+                        }}
+                      >
+                        <Award className="w-3.5 h-3.5 shrink-0" />
+                        <span>{activeBrand.halal_info?.label || 'Halal Certified'}</span>
+                      </span>
+                      <span className="badge badge-success badge-sm text-white font-semibold">Verified</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-base-content/60 font-medium block mb-1">Certificate Registration No.</label>
+                      <p className="font-mono text-sm font-semibold text-base-content">
+                        {activeBrand.halal_info?.cert_no || '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-base-content/60 font-medium block mb-1">Validity / Expiry Date</label>
+                      <p className="font-medium text-sm text-base-content">
+                        {activeBrand.halal_info?.cert_expiry || 'Active / Lifetime'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {Array.isArray(activeBrand.halal_info?.documents) && activeBrand.halal_info.documents.length > 0 && (
+                    <div className="pt-2 border-t border-base-200">
+                      <label className="text-base-content/60 font-medium block mb-2">
+                        Uploaded Certificates & Documents ({activeBrand.halal_info.documents.length})
+                      </label>
+                      <div className="space-y-2">
+                        {activeBrand.halal_info.documents.map((doc: any, idx: number) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-2.5 rounded-xl bg-base-200/60 border border-base-300/60"
+                          >
+                            <div className="flex items-center gap-2 truncate">
+                              <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="font-medium truncate">{doc.name || `Certificate ${idx + 1}`}</span>
+                              {doc.size && (
+                                <span className="text-[10px] text-base-content/50 shrink-0">
+                                  ({(doc.size / 1024).toFixed(0)} KB)
+                                </span>
+                              )}
+                            </div>
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-ghost btn-xs text-primary gap-1 font-semibold shrink-0"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>View</span>
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 rounded-2xl bg-base-200/50 border border-base-300 text-center space-y-2">
+                  <p className="text-xs text-base-content/60">
+                    No Halal certificate currently registered for this brand.
+                  </p>
+                  <Link
+                    href="/vendor-portal/profile/edit"
+                    className="btn btn-xs btn-outline btn-primary font-semibold"
+                  >
+                    Add Halal Certificate
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
 

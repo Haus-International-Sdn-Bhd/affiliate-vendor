@@ -16,6 +16,12 @@ import {
   AlertCircle,
   Calendar,
   Lock,
+  Award,
+  UploadCloud,
+  Trash2,
+  ExternalLink,
+  Loader2,
+  FileText,
 } from 'lucide-react';
 import VendorLoader from '@/components/VendorLoader';
 import { SUPPORTED_BANKS, findBankByName } from '@/lib/banks';
@@ -64,11 +70,28 @@ export default function EditVendorProfilePage() {
     bank_swift_code: '',
   });
 
+  // Halal Certification State
+  const [hasHalalCert, setHasHalalCert] = useState(false);
+  const [halalCategoryId, setHalalCategoryId] = useState('');
+  const [halalCertNo, setHalalCertNo] = useState('');
+  const [halalCertExpiry, setHalalCertExpiry] = useState('');
+  const [halalDocuments, setHalalDocuments] = useState<Array<{ url: string; name: string; size?: number }>>([]);
+  const [halalCategories, setHalalCategories] = useState<any[]>([]);
+  const [uploadingHalalDoc, setUploadingHalalDoc] = useState(false);
+  const [halalUploadError, setHalalUploadError] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const data = await vendorApi.getProfile();
+        const [data, catRes] = await Promise.all([
+          vendorApi.getProfile(),
+          vendorApi.getHalalCertifications().catch(() => []),
+        ]);
+
+        const categories = Array.isArray(catRes?.data) ? catRes.data : Array.isArray(catRes) ? catRes : [];
+        setHalalCategories(categories);
+
         const b = data?.brand || brand;
         const u = data?.user || user;
 
@@ -96,6 +119,19 @@ export default function EditVendorProfilePage() {
           bank_account_number: b?.bank_account_number || '',
           bank_swift_code: initialSwift,
         });
+
+        if (b?.has_halal_cert || b?.halal_info) {
+          setHasHalalCert(Boolean(b.has_halal_cert ?? b.halal_info?.has_cert));
+          if (b.halal_info?.category_id) setHalalCategoryId(b.halal_info.category_id);
+          else if (categories.length > 0) setHalalCategoryId(categories[0].id);
+          if (b.halal_info?.cert_no) setHalalCertNo(b.halal_info.cert_no);
+          if (b.halal_info?.cert_expiry) setHalalCertExpiry(b.halal_info.cert_expiry);
+          if (Array.isArray(b.halal_info?.documents)) {
+            setHalalDocuments(b.halal_info.documents);
+          }
+        } else if (categories.length > 0) {
+          setHalalCategoryId(categories[0].id);
+        }
       } catch (err) {
         console.error('Failed to load profile for editing:', err);
         setErrorMsg('Failed to load existing profile information.');
@@ -106,6 +142,55 @@ export default function EditVendorProfilePage() {
 
     fetchProfile();
   }, []);
+
+  const handleHalalFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setHalalUploadError(null);
+
+    const fileList = Array.from(files);
+    if (halalDocuments.length + fileList.length > 10) {
+      setHalalUploadError(`Maximum 10 Halal documents allowed. (Currently: ${halalDocuments.length})`);
+      e.target.value = '';
+      return;
+    }
+
+    const MAX_SIZE = 2.5 * 1024 * 1024; // 2.5 MB in bytes
+    for (const f of fileList) {
+      if (f.size > MAX_SIZE) {
+        setHalalUploadError(`File "${f.name}" exceeds the 2.5MB limit (${(f.size / (1024 * 1024)).toFixed(2)}MB).`);
+        e.target.value = '';
+        return;
+      }
+    }
+
+    setUploadingHalalDoc(true);
+    try {
+      const uploaded: Array<{ url: string; name: string; size?: number }> = [];
+      for (const f of fileList) {
+        const res = await vendorApi.uploadVendorDocument(f);
+        const url = res?.url || res?.data?.url;
+        if (url) {
+          uploaded.push({
+            url,
+            name: res?.name || f.name,
+            size: f.size,
+          });
+        }
+      }
+      setHalalDocuments((prev) => [...prev, ...uploaded]);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to upload document. Please ensure file is valid and under 2.5MB.';
+      setHalalUploadError(msg);
+    } finally {
+      setUploadingHalalDoc(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeHalalDocument = (idx: number) => {
+    setHalalDocuments((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -145,6 +230,11 @@ export default function EditVendorProfilePage() {
         bank_account_holder: formData.bank_account_holder,
         bank_account_number: formData.bank_account_number,
         bank_swift_code: formData.bank_swift_code,
+        has_halal_cert: hasHalalCert,
+        halal_category_id: hasHalalCert ? halalCategoryId : null,
+        halal_cert_no: hasHalalCert ? halalCertNo.trim() : null,
+        halal_cert_expiry: hasHalalCert ? halalCertExpiry : null,
+        halal_documents: hasHalalCert ? halalDocuments : [],
       });
 
       if (refreshBrand) {
@@ -179,7 +269,7 @@ export default function EditVendorProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-5xl pb-12">
+    <div className="space-y-6 w-full pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -423,6 +513,203 @@ export default function EditVendorProfilePage() {
                 ></textarea>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Halal Certification & Regulatory Compliance */}
+        <div className="card bg-base-100 border border-base-300 shadow-sm">
+          <div className="card-body p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-base-300 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Award className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                <div>
+                  <h2 className="font-bold text-sm text-base-content">
+                    Halal Certification & Regulatory Compliance
+                  </h2>
+                  <p className="text-[11px] text-base-content/60">
+                    Officially certified Halal credentials displayed on public storefront & partner directory
+                  </p>
+                </div>
+              </div>
+              <label className="label cursor-pointer gap-2 p-0">
+                <span className="text-xs font-bold text-base-content/80">Has Halal Cert?</span>
+                <input
+                  type="checkbox"
+                  checked={hasHalalCert}
+                  onChange={(e) => setHasHalalCert(e.target.checked)}
+                  className="toggle toggle-success toggle-sm"
+                />
+              </label>
+            </div>
+
+            {hasHalalCert ? (
+              <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 sm:p-5 space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Certifying Authority / Country */}
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text text-xs font-semibold text-base-content/70">
+                        Certifying Authority / Country <span className="text-error">*</span>
+                      </span>
+                    </label>
+                    <select
+                      value={halalCategoryId}
+                      onChange={(e) => setHalalCategoryId(e.target.value)}
+                      className="select select-bordered select-sm w-full font-medium focus:select-primary"
+                    >
+                      {halalCategories.length === 0 && (
+                        <option value="">Standard Halal Malaysia</option>
+                      )}
+                      {halalCategories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.label || cat.country}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Cert Number */}
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text text-xs font-semibold text-base-content/70">
+                        Certificate Registration No. <span className="text-error">*</span>
+                      </span>
+                    </label>
+                    <input
+                      type="text"
+                      value={halalCertNo}
+                      onChange={(e) => setHalalCertNo(e.target.value)}
+                      placeholder="e.g. JAKIM/(S)/(22.00)/492/2/ 1"
+                      className="input input-bordered input-sm w-full font-mono focus:input-primary"
+                    />
+                  </div>
+
+                  {/* Expiry Date */}
+                  <div className="form-control">
+                    <label className="label py-1">
+                      <span className="label-text text-xs font-semibold text-base-content/70">
+                        Certificate Expiry Date
+                      </span>
+                    </label>
+                    <input
+                      type="date"
+                      value={halalCertExpiry}
+                      onChange={(e) => setHalalCertExpiry(e.target.value)}
+                      className="input input-bordered input-sm w-full focus:input-primary"
+                    />
+                  </div>
+                </div>
+
+                {/* Live Badge Preview */}
+                {(() => {
+                  const selectedCat = halalCategories.find((c) => c.id === halalCategoryId) || halalCategories[0];
+                  if (!selectedCat) return null;
+                  return (
+                    <div className="flex items-center justify-between p-3 rounded-xl bg-base-100 border border-base-300">
+                      <span className="text-xs text-base-content/70 font-medium">Storefront Badge Preview:</span>
+                      <span
+                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wide shadow-xs border"
+                        style={{
+                          backgroundColor: selectedCat.badge_color || '#FEF08A',
+                          color: selectedCat.badge_text_color || '#854D0E',
+                          borderColor: 'rgba(0,0,0,0.08)',
+                        }}
+                      >
+                        <Award className="w-3.5 h-3.5 shrink-0" />
+                        <span>{selectedCat.label || selectedCat.country}</span>
+                      </span>
+                    </div>
+                  );
+                })()}
+
+                {/* Upload Documents (Max 10, Max 2.5MB) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-base-content">
+                      Certificate Documents & Supporting Evidence
+                    </label>
+                    <span className="text-[11px] text-base-content/60">
+                      Max 10 files • Max 2.5MB per file (PDF, JPG, PNG)
+                    </span>
+                  </div>
+
+                  <label className="relative border-2 border-dashed border-emerald-500/30 hover:border-emerald-500/60 rounded-2xl p-4 flex flex-col items-center justify-center cursor-pointer bg-base-100/50 hover:bg-emerald-500/5 transition-colors">
+                    <input
+                      type="file"
+                      multiple
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={handleHalalFileUpload}
+                      disabled={uploadingHalalDoc || halalDocuments.length >= 10}
+                      className="hidden"
+                    />
+                    {uploadingHalalDoc ? (
+                      <div className="flex items-center gap-2 text-xs font-bold text-primary">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Uploading document(s)...</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center text-center gap-1">
+                        <UploadCloud className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-xs font-bold text-base-content">
+                          Click or drop certificate files here to upload
+                        </span>
+                        <span className="text-[10px] text-base-content/60">
+                          {halalDocuments.length}/10 uploaded
+                        </span>
+                      </div>
+                    )}
+                  </label>
+
+                  {halalUploadError && (
+                    <p className="text-xs text-error mt-1.5 font-medium">{halalUploadError}</p>
+                  )}
+
+                  {halalDocuments.length > 0 && (
+                    <div className="space-y-1.5 mt-3">
+                      {halalDocuments.map((doc, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between bg-base-100 border border-base-300 rounded-xl px-3 py-2 text-xs"
+                        >
+                          <div className="flex items-center gap-2 truncate">
+                            <FileText className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="font-medium text-base-content truncate">{doc.name}</span>
+                            {doc.size && (
+                              <span className="text-[10px] text-base-content/50 shrink-0">
+                                ({(doc.size / 1024).toFixed(0)} KB)
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={doc.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-ghost btn-xs text-primary"
+                              title="View Document"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => removeHalalDocument(idx)}
+                              className="btn btn-ghost btn-xs text-error hover:bg-error/10"
+                              title="Remove"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-xs text-base-content/50 italic">
+                Toggle "Has Halal Cert?" above to add verified halal certification details and supporting documents.
+              </p>
+            )}
           </div>
         </div>
 

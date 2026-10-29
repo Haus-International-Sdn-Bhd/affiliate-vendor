@@ -46,7 +46,7 @@ export default function VendorDashboardPage() {
       const [dashRes, repRes, prodRes] = await Promise.allSettled([
         vendorApi.getDashboard(),
         vendorApi.getReporting({ start_date: timeRange }),
-        vendorApi.getProducts({ per_page: 50 }),
+        vendorApi.getProducts({ per_page: 15 }),
       ]);
 
       if (dashRes.status === 'fulfilled') {
@@ -76,10 +76,10 @@ export default function VendorDashboardPage() {
   useEffect(() => {
     fetchData();
 
-    // Live Monitoring: auto-refresh metrics every 30 seconds
+    // Live Monitoring: auto-refresh metrics every 60 seconds
     const interval = setInterval(() => {
       fetchData(true);
-    }, 30000);
+    }, 60000);
 
     return () => clearInterval(interval);
   }, [timeRange]);
@@ -153,7 +153,7 @@ export default function VendorDashboardPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Live Preloader Status Bar */}
       {loading && (
         <div className="w-full bg-base-100 rounded-2xl p-3.5 border border-base-300/80 shadow-sm flex items-center gap-3.5 animate-fade-in">

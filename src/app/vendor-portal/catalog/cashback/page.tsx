@@ -20,6 +20,7 @@ import {
   X,
   Layers,
   Percent,
+  ShieldAlert,
 } from 'lucide-react';
 
 export default function VendorCashbackPage() {
@@ -61,6 +62,47 @@ export default function VendorCashbackPage() {
     { key: 'star_partner', label: 'Star Partner' },
   ];
 
+  // Brand Cashback Participation State
+  const [brandStatus, setBrandStatus] = useState<{
+    brand_id: number;
+    brand_name: string;
+    is_anchor: boolean;
+    is_cashback_enabled: boolean;
+    vendor_head_enabled: boolean;
+    can_toggle: boolean;
+    global_enabled: boolean;
+  } | null>(null);
+  const [isTogglingBrand, setIsTogglingBrand] = useState(false);
+
+  const fetchBrandStatus = async () => {
+    try {
+      const res = await vendorApi.getBrandCashbackStatus();
+      if (res?.success && res.data) {
+        setBrandStatus(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to load brand cashback status', err);
+    }
+  };
+
+  const handleToggleBrandCashback = async () => {
+    if (!brandStatus || !brandStatus.can_toggle) return;
+    const nextState = !brandStatus.is_cashback_enabled;
+    setIsTogglingBrand(true);
+    try {
+      const res = await vendorApi.toggleBrandCashback(nextState);
+      if (res?.success) {
+        setBrandStatus((prev) => (prev ? { ...prev, is_cashback_enabled: nextState } : null));
+        setSuccessMessage(res.message);
+        setTimeout(() => setSuccessMessage(null), 4000);
+      }
+    } catch (err: any) {
+      alert(err?.response?.data?.message || 'Failed to update brand cashback status.');
+    } finally {
+      setIsTogglingBrand(false);
+    }
+  };
+
   const fetchRules = async () => {
     setIsLoading(true);
     try {
@@ -76,6 +118,7 @@ export default function VendorCashbackPage() {
 
   useEffect(() => {
     fetchRules();
+    fetchBrandStatus();
   }, [brand?.id]);
 
   const openCreateModal = () => {
@@ -206,7 +249,7 @@ export default function VendorCashbackPage() {
   const pendingCount = rules.filter((r) => r.status === 'pending_approval').length;
 
   return (
-    <div className="space-y-6 w-full max-w-7xl pb-16">
+    <div className="space-y-6 w-full pb-16">
       {/* Top Banner / Heading */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -232,7 +275,7 @@ export default function VendorCashbackPage() {
           className="btn btn-primary btn-sm gap-2 font-bold shadow-sm"
         >
           <Plus className="w-4 h-4" />
-          <span>New Cashback Rule</span>
+          <span>+ Set Cashback % / New Rule</span>
         </button>
       </div>
 
@@ -246,6 +289,112 @@ export default function VendorCashbackPage() {
           <button type="button" onClick={() => setSuccessMessage(null)} className="btn btn-ghost btn-xs btn-circle">
             <X className="w-3.5 h-3.5" />
           </button>
+        </div>
+      )}
+
+      {/* Brand Cashback Participation Control Card */}
+      {brandStatus && (
+        <div className="rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-base-content/60">
+                  Brand Cashback Participation
+                </span>
+                {!brandStatus.global_enabled ? (
+                  <span className="badge badge-xs badge-ghost text-base-content/40">Platform Offline</span>
+                ) : !brandStatus.vendor_head_enabled ? (
+                  <span className="badge badge-xs badge-error gap-1 font-bold">
+                    <ShieldAlert className="w-3 h-3" />
+                    <span>Vendor Restricted</span>
+                  </span>
+                ) : brandStatus.is_cashback_enabled ? (
+                  <span className="badge badge-xs badge-success gap-1 font-bold">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>Active for {brandStatus.brand_name}</span>
+                  </span>
+                ) : (
+                  <span className="badge badge-xs badge-neutral font-bold">
+                    Paused / Exempt
+                  </span>
+                )}
+              </div>
+
+              <h2 className="text-lg font-bold text-base-content">
+                Enable Cashback for {brandStatus.brand_name}
+              </h2>
+              <p className="text-xs text-base-content/60 max-w-2xl leading-relaxed">
+                {brandStatus.is_cashback_enabled
+                  ? 'Your brand is actively offering customer cashback. Products will award cashback per your active promotional rules, and funded amounts are billed in weekly settlement.'
+                  : 'Cashback is turned OFF for this brand. All products from this brand will award 0% cashback, and your brand is 100% exempt from settlement cashback deductions.'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="text-right hidden sm:block">
+                <p className="text-xs font-bold text-base-content">
+                  {brandStatus.is_cashback_enabled ? 'Brand Participating' : 'Brand Exempt'}
+                </p>
+                <p className="text-[10px] text-base-content/50">
+                  {!brandStatus.vendor_head_enabled ? 'Locked by Admin' : 'Click toggle to change'}
+                </p>
+              </div>
+
+              <input
+                type="checkbox"
+                className={`toggle toggle-md ${brandStatus.is_cashback_enabled ? 'toggle-success' : 'toggle-neutral'}`}
+                checked={brandStatus.is_cashback_enabled && brandStatus.vendor_head_enabled && brandStatus.global_enabled}
+                disabled={!brandStatus.can_toggle || isTogglingBrand}
+                onChange={handleToggleBrandCashback}
+                title={!brandStatus.vendor_head_enabled ? 'Locked by Vendor Account Policy' : 'Toggle cashback for this brand'}
+              />
+            </div>
+          </div>
+
+          {/* Configured Rate Summary & Quick Action */}
+          {brandStatus.is_cashback_enabled && (
+            <div className="pt-3 border-t border-base-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-base-content/60 font-medium">Configured Brand Cashback Rate:</span>
+                {rules.length > 0 ? (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {rules.map((r) => (
+                      <span key={r.id} className="badge badge-primary font-bold text-xs gap-1">
+                        <span>{Number(r.cashback_percent).toFixed(1)}%</span>
+                        <span className="opacity-75 font-normal">({r.name})</span>
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="badge badge-ghost text-xs text-base-content/60 font-medium">
+                    No custom rule created yet (Default: 2.0% Pilihan B baseline)
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={openCreateModal}
+                className="btn btn-primary btn-xs rounded-lg gap-1.5 font-bold shadow-xs"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{rules.length > 0 ? 'Add Another Rate / Rule' : 'Set Brand Percentage Now'}</span>
+              </button>
+            </div>
+          )}
+
+          {/* Alert if Vendor Head is disabled by Admin */}
+          {!brandStatus.vendor_head_enabled && (
+            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 flex items-start gap-2.5 text-xs text-amber-700 dark:text-amber-300">
+              <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div>
+                <p className="font-bold">Vendor Account Level Restriction</p>
+                <p className="text-[11px] opacity-90 mt-0.5">
+                  Cashback participation is currently disabled for your vendor account by Platform Administration. Child brands cannot be enabled until your account-level status is updated. Please contact support if you believe this is in error.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -284,12 +433,24 @@ export default function VendorCashbackPage() {
           <Clock className="pointer-events-none absolute -bottom-3 -right-3 h-20 w-20 text-amber-500/10 transition-all duration-500 ease-out group-hover:scale-125 group-hover:-translate-y-2 group-hover:-translate-x-1 group-hover:rotate-6 group-hover:text-amber-500/20" />
         </div>
 
-        {/* Card 3: Maximum Incentive Cap */}
+        {/* Card 3: Configured Rate */}
         <div className="group relative overflow-hidden rounded-2xl border border-base-300 bg-base-100 p-5 shadow-sm transition-all hover:shadow-md">
           <div className="relative z-10 space-y-1">
-            <p className="text-xs font-medium uppercase tracking-wider text-base-content/60">Allowed Rate Range</p>
-            <p className="text-2xl font-black tracking-tight text-primary">2.0% – 5.0%</p>
-            <p className="text-[11px] text-base-content/50">Bounded by compensation policy</p>
+            <p className="text-xs font-medium uppercase tracking-wider text-base-content/60">
+              {rules.length > 0 ? 'Configured Rate' : 'Allowed Rate Range'}
+            </p>
+            <p className="text-2xl font-black tracking-tight text-primary">
+              {rules.length === 1
+                ? `${Number(rules[0].cashback_percent).toFixed(1)}%`
+                : rules.length > 1
+                ? `${Math.min(...rules.map((r) => Number(r.cashback_percent))).toFixed(1)}% – ${Math.max(...rules.map((r) => Number(r.cashback_percent))).toFixed(1)}%`
+                : '2.0% – 5.0%'}
+            </p>
+            <p className="text-[11px] text-base-content/50">
+              {rules.length > 0
+                ? `${rules.length} rule${rules.length > 1 ? 's' : ''} active · Click rule to edit %`
+                : 'Click "+ Set Cashback %" to configure'}
+            </p>
           </div>
           <Percent className="pointer-events-none absolute -bottom-3 -right-3 h-20 w-20 text-primary/10 transition-all duration-500 ease-out group-hover:scale-125 group-hover:-translate-y-2 group-hover:-translate-x-1 group-hover:rotate-6 group-hover:text-primary/20" />
         </div>
@@ -320,13 +481,13 @@ export default function VendorCashbackPage() {
       <div className="card card-border bg-base-100 shadow-sm p-4">
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-72">
-            <Search className="w-4 h-4 text-base-content/50 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-base-content/60 absolute left-3 top-1/2 -translate-y-1/2 z-10 pointer-events-none" />
             <input
               type="text"
               placeholder="Search rules..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input input-sm input-bordered w-full pl-9 text-xs"
+              className="input input-sm input-bordered w-full pl-10 text-xs"
             />
           </div>
 
@@ -359,14 +520,23 @@ export default function VendorCashbackPage() {
         ) : filteredRules.length === 0 ? (
           <div className="p-12 text-center space-y-3">
             <div className="w-12 h-12 rounded-full bg-base-200 text-base-content/40 mx-auto flex items-center justify-center">
-              <Sparkles className="w-6 h-6" />
+              <Sparkles className="w-6 h-6 text-primary" />
             </div>
-            <h3 className="text-sm font-bold text-base-content">No Cashback Rules Found</h3>
-            <p className="text-xs text-base-content/60 max-w-sm mx-auto">
-              Boost your brand sales by setting up customer cashback incentives between 2.0% and 5.0%.
+            <h3 className="text-sm font-bold text-base-content">
+              {searchTerm ? 'No Matching Cashback Rules Found' : 'No Cashback Rules Configured Yet'}
+            </h3>
+            <p className="text-xs text-base-content/60 max-w-md mx-auto">
+              {searchTerm
+                ? `No cashback rules match your search "${searchTerm}".`
+                : 'Configure your brand cashback percentage (e.g. 2.5%, 3.0%, or custom tiers) across all products or target categories to boost customer retention.'}
             </p>
-            <button type="button" onClick={openCreateModal} className="btn btn-primary btn-xs font-semibold">
-              Create First Rule
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="btn btn-primary btn-sm rounded-xl font-bold gap-1.5 shadow-sm"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Set Cashback Percentage & Rule</span>
             </button>
           </div>
         ) : (
@@ -503,7 +673,7 @@ export default function VendorCashbackPage() {
               <div>
                 <h3 className="font-bold text-base text-base-content flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-emerald-500" />
-                  <span>{isEditMode ? 'Edit Cashback Rule' : 'New Customer Cashback Rule'}</span>
+                  <span>{isEditMode ? 'Edit Cashback Rule & Percentage' : 'Set Customer Cashback Percentage & Rule'}</span>
                 </h3>
                 <p className="text-xs text-base-content/60">Configure reward rate & product scope for {brand?.name}</p>
               </div>

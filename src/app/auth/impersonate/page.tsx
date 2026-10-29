@@ -26,6 +26,10 @@ function ImpersonateContent() {
         setStatusText("Verifying session permissions...");
         // Temporarily store token so vendorApi uses it for profile lookup
         localStorage.setItem("vf_vendor_token", token);
+        const brandId = searchParams.get("brand_id");
+        if (brandId) {
+          localStorage.setItem("vf_vendor_active_brand_id", brandId);
+        }
 
         const res = await vendorApi.getProfile();
         const brand = res.brand || null;

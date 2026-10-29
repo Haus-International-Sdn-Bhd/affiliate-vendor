@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import {
   Store,
   ChevronDown,
@@ -48,8 +49,14 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
     return kelas.replace('_', ' ').toUpperCase();
   };
 
+  // Filter out any anchor / Haus Cosmetics brands
+  const partnerBrands = (brands || []).filter((b) => {
+    const s = (b.slug || b.name || '').toLowerCase();
+    return !b.is_anchor && s !== 'haus-cosmetics' && !s.includes('haus cosmetics') && b.code !== 'BRD-HAUS';
+  });
+
   // If vendor has 0 brands yet
-  if (!brands || brands.length === 0) {
+  if (!partnerBrands || partnerBrands.length === 0) {
     if (compact) {
       return (
         <button
@@ -77,9 +84,9 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
 
   // Active brand identifier
   const currentBrand =
-    brands.find((b) => String(b.id) === String(activeBrandId)) ||
-    brand ||
-    brands[0];
+    partnerBrands.find((b) => String(b.id) === String(activeBrandId)) ||
+    (!brand?.is_anchor && brand?.slug !== 'haus-cosmetics' ? brand : null) ||
+    partnerBrands[0];
 
   return (
     <div className="dropdown dropdown-bottom dropdown-end">
@@ -118,12 +125,12 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
         className="dropdown-content z-50 menu p-2 shadow-2xl bg-base-100 rounded-2xl w-64 sm:w-72 border border-base-300 mt-2 space-y-1 animate-in fade-in zoom-in-95 duration-150"
       >
         <li className="menu-title px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-base-content/50 border-b border-base-200 flex justify-between items-center">
-          <span>Switch Brand ({brands.length})</span>
+          <span>Switch Brand ({partnerBrands.length})</span>
           <span className="text-[10px] font-normal lowercase">1 vendor → n brands</span>
         </li>
 
         <div className="max-h-56 overflow-y-auto py-1 space-y-0.5">
-          {brands.map((b) => {
+          {partnerBrands.map((b) => {
             const isActive = String(b.id) === String(currentBrand?.id);
             const tierBadge = getKelasColor(b.current_class || b.settlement_class);
             const tierLabel = getKelasLabel(b.current_class || b.settlement_class);
@@ -174,7 +181,16 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
         </div>
 
         {/* Divider and Add Brand action */}
-        <div className="pt-1 border-t border-base-200">
+        <div className="pt-1 border-t border-base-200 space-y-0.5">
+          <li>
+            <Link
+              href="/vendor-portal/brands"
+              className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-base-content/80 hover:bg-base-200 rounded-xl"
+            >
+              <Store className="w-4 h-4 text-base-content/60" />
+              <span>Manage All Brands</span>
+            </Link>
+          </li>
           <li>
             <button
               type="button"

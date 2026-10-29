@@ -97,6 +97,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setActiveBrandId(null);
     setRoles([]);
     setPermissions([]);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("vf_vendor_tour_finished_session");
+      sessionStorage.removeItem("vf_vendor_tour_pending_session");
+    }
+    setIsOnboardingOpen(false);
     setIsSessionExpired(true);
   }, []);
 
@@ -144,8 +149,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const data = await vendorApi.getProfile();
       if (data.brands && Array.isArray(data.brands)) {
-        setBrands(data.brands);
-        localStorage.setItem("vf_vendor_brands", JSON.stringify(data.brands));
+        const partnerOnly = data.brands.filter((b: any) => {
+          const s = (b.slug || b.name || '').toLowerCase();
+          return !b.is_anchor && s !== 'haus-cosmetics' && !s.includes('haus cosmetics') && b.code !== 'BRD-HAUS';
+        });
+        setBrands(partnerOnly);
+        localStorage.setItem("vf_vendor_brands", JSON.stringify(partnerOnly));
       }
       if (data.active_brand_id) {
         setActiveBrandId(String(data.active_brand_id));
@@ -170,12 +179,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           ? Boolean(data.user.onboarding_completed)
           : true;
         setOnboardingCompleted(isDone);
-        if (!isDone) {
-          setIsOnboardingOpen(true);
-        }
       }
       if (data.roles) {
         setRoles(data.roles);
+      }
+      if (data.permissions && Array.isArray(data.permissions) && data.permissions.length > 0) {
+        setPermissions(data.permissions);
+        localStorage.setItem(
+          "vf_vendor_permissions",
+          JSON.stringify(data.permissions)
+        );
       }
       if (data.config) {
         setVendorConfig(data.config);
@@ -213,14 +226,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const closeOnboarding = () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("vf_vendor_tour_finished_session", "true");
+      sessionStorage.removeItem("vf_vendor_tour_pending_session");
+    }
     setIsOnboardingOpen(false);
   };
 
   const completeOnboarding = async () => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("vf_vendor_tour_finished_session", "true");
+      sessionStorage.removeItem("vf_vendor_tour_pending_session");
+    }
+    setIsOnboardingOpen(false);
+    setOnboardingCompleted(true);
     try {
       await vendorApi.updateProfile({ onboarding_completed: true });
-      setOnboardingCompleted(true);
-      setIsOnboardingOpen(false);
       if (user) {
         const updatedUser = { ...user, onboarding_completed: true };
         setUser(updatedUser);
@@ -228,8 +249,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     } catch (err) {
       console.error("Failed to persist onboarding completion:", err);
-      setOnboardingCompleted(true);
-      setIsOnboardingOpen(false);
     }
   };
 
@@ -267,10 +286,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               }
             }
             if (savedBrand) setBrand(JSON.parse(savedBrand));
-        if (savedBrands) {
-          try { setBrands(JSON.parse(savedBrands)); } catch {}
-        }
-        if (savedActiveBrandId) setActiveBrandId(savedActiveBrandId);
+            if (savedBrands) {
+              try { setBrands(JSON.parse(savedBrands)); } catch {}
+            }
+            if (savedActiveBrandId) setActiveBrandId(savedActiveBrandId);
             if (savedPermissions) setPermissions(JSON.parse(savedPermissions));
             if (savedConfig) setVendorConfig(JSON.parse(savedConfig));
           } catch {
@@ -336,7 +355,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     verifyAuthToken();
     const interval = setInterval(verifyAuthToken, 30000);
     return () => clearInterval(interval);
-  }, [token, triggerSessionExpired]);
+  }, [token, triggerSessionExpired, refreshBrand]);
 
   useEffect(() => {
     try {
@@ -356,7 +375,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           if (parsedUser.onboarding_completed !== undefined) {
             const isDone = Boolean(parsedUser.onboarding_completed);
             setOnboardingCompleted(isDone);
-            if (!isDone) {
+            const tourFinished = typeof window !== "undefined" && sessionStorage.getItem("vf_vendor_tour_finished_session") === "true";
+            const tourPending = typeof window !== "undefined" && sessionStorage.getItem("vf_vendor_tour_pending_session") === "true";
+            if (!tourFinished && tourPending) {
               setIsOnboardingOpen(true);
             }
           }
@@ -376,7 +397,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     } catch (e) {
       setIsLoading(false);
     }
-  }, []);
+  }, [refreshBrand]);
 
   const login = (
     newToken: string,
@@ -410,12 +431,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setUser(newUser);
     const isDone = newUser?.onboarding_completed !== undefined
       ? Boolean(newUser.onboarding_completed)
-      : true;
+      : false;
     setOnboardingCompleted(isDone);
-    if (!isDone) {
-      setIsOnboardingOpen(true);
-    }
     setIsSessionExpired(false);
+
+    // On login: Show tour once, set pending flag, clear finished flag for this session
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("vf_vendor_tour_finished_session");
+      sessionStorage.setItem("vf_vendor_tour_pending_session", "true");
+    }
+    setIsOnboardingOpen(true);
+
     refreshBrand();
   };
 
@@ -439,6 +465,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     setRoles([]);
     setPermissions([]);
     setIsSessionExpired(false);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("vf_vendor_tour_finished_session");
+      sessionStorage.removeItem("vf_vendor_tour_pending_session");
+    }
     setIsOnboardingOpen(false);
     router.push("/login");
   };

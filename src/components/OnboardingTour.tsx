@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import {
   ChevronRight,
@@ -9,7 +9,6 @@ import {
   Sparkles,
   Zap,
   X,
-  HelpCircle,
   LayoutDashboard,
   Package,
   Layers,
@@ -18,6 +17,7 @@ import {
   Calendar,
   Bell,
   User,
+  Store,
 } from 'lucide-react';
 
 interface TourStep {
@@ -49,6 +49,15 @@ const ALL_TOUR_STEPS: TourStep[] = [
       'Displays your verified brand partner identity and currently active settlement class tier (e.g. Kelas B - 50% Net Share).',
     category: 'Brand Identity',
     icon: Sparkles,
+    position: 'right',
+  },
+  {
+    target: '[data-tour="nav-brands"]',
+    title: 'Partner Brands & Multi-Store',
+    description:
+      'Manage multiple brands under your vendor account, switch active operating brands, review settlement tiers, and register new partner brands.',
+    category: 'Brand Management',
+    icon: Store,
     position: 'right',
   },
   {
@@ -179,7 +188,7 @@ export default function OnboardingTour({
 }: {
   onExpandGroup?: (groupKey: string) => void;
 }) {
-  const { isOnboardingOpen, onboardingCompleted, completeOnboarding, closeOnboarding, hasPermission } =
+  const { isOnboardingOpen, completeOnboarding, closeOnboarding, hasPermission } =
     useAuth();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
@@ -192,7 +201,6 @@ export default function OnboardingTour({
 
   const step = activeTourSteps[currentStepIndex];
   const isLastStep = currentStepIndex === activeTourSteps.length - 1;
-  const isCompulsory = !onboardingCompleted;
 
   // Reset to step 0 when onboarding opens
   useEffect(() => {
@@ -358,16 +366,15 @@ export default function OnboardingTour({
             </div>
           </div>
 
-          {/* Close button only if not mandatory */}
-          {!isCompulsory && (
-            <button
-              onClick={closeOnboarding}
-              className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
-              title="Exit Tour"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
+          {/* Close button to dismiss tour */}
+          <button
+            type="button"
+            onClick={closeOnboarding}
+            className="btn btn-ghost btn-xs btn-circle text-base-content/60 hover:text-base-content"
+            title="Exit Tour"
+          >
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Progress Bar */}
@@ -383,28 +390,30 @@ export default function OnboardingTour({
           <p className="text-xs text-base-content/80 leading-relaxed font-normal">
             {step.description}
           </p>
-
-          {isCompulsory && (
-            <div className="p-2.5 rounded-xl bg-primary/5 border border-primary/20 flex items-center gap-2 text-[11px] text-primary font-medium">
-              <Zap className="w-3.5 h-3.5 shrink-0" />
-              <span>
-                Compulsory onboarding walkthrough for new vendor setup.
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Footer Actions */}
         <div className="px-5 py-3.5 bg-base-200/50 border-t border-base-300 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={handlePrev}
-            disabled={currentStepIndex === 0}
-            className="btn btn-ghost btn-xs font-semibold gap-1 text-base-content/70 disabled:opacity-30"
-          >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            <span>Previous</span>
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={handlePrev}
+              disabled={currentStepIndex === 0}
+              className="btn btn-ghost btn-xs font-semibold gap-1 text-base-content/70 disabled:opacity-30"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Previous</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleFinish}
+              disabled={isFinishing}
+              className="btn btn-ghost btn-xs font-medium text-base-content/60 hover:text-base-content"
+              title="Skip remaining steps and finish"
+            >
+              Skip
+            </button>
+          </div>
 
           <div className="flex items-center gap-1">
             {activeTourSteps.map((_, i) => (

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.hausinternational.my";
-const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_URL || "http://localhost:3000";
+const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_URL || process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
 const AUTH_API_KEY =
   process.env.NEXT_PUBLIC_AUTH_API_KEY ||
   process.env.NEXT_PUBLIC_API_KEY ||
@@ -341,6 +341,7 @@ export const vendorApi = {
     per_page?: number;
     search?: string;
     status?: string;
+    brand_id?: string | number;
   }) => {
     const response = await apiClient.get("/v1/vendor/portal/products", {
       params,
@@ -368,6 +369,24 @@ export const vendorApi = {
 
   deleteProduct: async (id: string) => {
     const response = await apiClient.delete(`/v1/vendor/portal/products/${id}`);
+    return response.data;
+  },
+
+  getProductCashbackConfig: async (productId: string | number) => {
+    const response = await apiClient.get(
+      `/v1/vendor/portal/cashback-rules/product/${productId}`,
+    );
+    return response.data;
+  },
+
+  saveProductCashbackConfig: async (
+    productId: string | number,
+    data: { mode: "on" | "off" | "global"; percent?: number },
+  ) => {
+    const response = await apiClient.post(
+      `/v1/vendor/portal/cashback-rules/product/${productId}`,
+      data,
+    );
     return response.data;
   },
 
@@ -500,6 +519,38 @@ export const vendorApi = {
 
   deleteCashbackRule: async (id: string | number) => {
     const response = await apiClient.delete(`/v1/vendor/portal/cashback-rules/${id}`);
+    return response.data;
+  },
+
+  getBrandCashbackStatus: async () => {
+    const response = await apiClient.get("/v1/vendor/portal/cashback-rules/brand-status");
+    return response.data;
+  },
+
+  toggleBrandCashback: async (is_cashback_enabled: boolean) => {
+    const response = await apiClient.post("/v1/vendor/portal/cashback-rules/brand-toggle", {
+      is_cashback_enabled,
+    });
+    return response.data;
+  },
+
+  // Halal Certification & Document Upload
+  getHalalCertifications: async () => {
+    try {
+      const response = await apiClient.get("/v1/public/halal-certifications");
+      return response.data?.data || response.data || [];
+    } catch {
+      return [];
+    }
+  },
+
+  uploadVendorDocument: async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("document", file);
+    const response = await apiClient.post("/v1/public/vendor/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return response.data;
   },
 };

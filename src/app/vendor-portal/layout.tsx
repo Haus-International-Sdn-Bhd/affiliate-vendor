@@ -128,6 +128,11 @@ export default function DashboardLayout({
         return "Add Product";
       }
       if (
+        path.includes("/catalog/cashback")
+      ) {
+        return "Customer Cashback";
+      }
+      if (
         path.includes("/catalog/performance") ||
         path === "/vendor-portal/products/performance" ||
         path === "/products/performance"
@@ -157,6 +162,11 @@ export default function DashboardLayout({
         path === "/reporting/products"
       ) {
         return "Performance Report";
+      }
+      if (
+        path.includes("/brands")
+      ) {
+        return "Partner Brands";
       }
       if (
         path.includes("/accounting")
@@ -247,6 +257,17 @@ export default function DashboardLayout({
       icon: LayoutDashboard,
       permission: "vendor.dashboard.view",
       dataTour: "nav-dashboard",
+    },
+    {
+      type: "link" as const,
+      name: "Partner Brands",
+      href: "/vendor-portal/brands",
+      aliases: [
+        "/vendor-portal/brands",
+        "/brands",
+      ],
+      icon: Store,
+      dataTour: "nav-brands",
     },
     {
       type: "group" as const,
@@ -449,6 +470,8 @@ export default function DashboardLayout({
         items.push({ label: "Add Product" });
       } else if (pathname.includes("/performance")) {
         items.push({ label: "NCS Leaderboard" });
+      } else if (pathname.includes("/cashback")) {
+        items.push({ label: "Customer Cashback" });
       } else if (pathname.includes("/breakdown")) {
         items.push({ label: "Catalog Breakdown" });
       } else if (pathname.includes("/edit")) {
@@ -473,6 +496,11 @@ export default function DashboardLayout({
       ) {
         items.push({ label: "Performance Report" });
       }
+    } else if (
+      pathname === "/vendor-portal/brands" ||
+      pathname === "/brands"
+    ) {
+      items.push({ label: "Partner Brands" });
     } else if (
       pathname === "/vendor-portal/accounting" ||
       pathname === "/accounting"
@@ -919,6 +947,15 @@ export default function DashboardLayout({
                 </li>
 
                 <div className="divider my-0.5"></div>
+                <li>
+                  <Link
+                    href="/vendor-portal/brands"
+                    className="flex items-center gap-2.5 py-2 text-xs font-medium"
+                  >
+                    <Store className="w-4 h-4 text-base-content/70" />
+                    Partner Brands
+                  </Link>
+                </li>
                 {hasPermission('vendor.profile.view') && (
                   <li>
                     <Link
@@ -979,7 +1016,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-6 sm:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 w-full max-w-none transition-all duration-200">
           {renderBreadcrumbs()}
           {!isLoading && brands && brands.length === 0 && (
             <div className="mb-8 p-6 sm:p-8 bg-base-100 border border-primary/20 rounded-3xl shadow-sm text-center space-y-4 max-w-xl mx-auto animate-in fade-in">

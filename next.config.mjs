@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
+const isDev = process.env.NODE_ENV === 'development';
+
 const nextConfig = {
-  output: 'export',
+  // Only enforce static export during production builds to allow seamless dynamic dev routing in Turbopack
+  ...(isDev ? {} : { output: 'export' }),
   trailingSlash: true,
   images: {
     unoptimized: true,

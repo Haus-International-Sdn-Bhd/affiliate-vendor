@@ -34,7 +34,7 @@ import {
 import ConfirmModal from '@/components/ConfirmModal';
 
 export default function ProductsListPage() {
-  const { brand, hasPermission } = useAuth();
+  const { brand, activeBrandId, hasPermission } = useAuth();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -68,12 +68,30 @@ export default function ProductsListPage() {
       setLoading(true);
       const res = await vendorApi.getProducts({
         search: searchTerm || undefined,
+        brand_id: activeBrandId || brand?.id || undefined,
       });
       const items = res.data || res.products || res || [];
       const list = Array.isArray(items) ? items : [];
 
       // Map to storefront-compatible structure
-      const normalized = list.map((p: any) => {
+      // Filter out any anchor / Haus Cosmetics products that are not part of vendor catalog
+      const vendorItems = list.filter((p: any) => {
+        const bName = String(
+          p.brand_name ||
+          (typeof p.brand === 'object' ? p.brand?.name : p.brand) ||
+          ''
+        ).toLowerCase();
+        if (
+          bName.includes('haus cosmetics') ||
+          bName === 'haus-cosmetics' ||
+          Number(p.brand_id) === 1
+        ) {
+          return false;
+        }
+        return true;
+      });
+
+      const normalized = vendorItems.map((p: any) => {
         const priceVal = typeof p.price === 'number'
           ? p.price
           : (Number(p.pricings?.[0]?.base_price) || Number(p.pricings?.[0]?.price) || Number(p.price) || 0);
@@ -89,7 +107,7 @@ export default function ProductsListPage() {
           id: p.id || p.uuid,
           uuid: String(p.id || p.uuid),
           name: p.name || 'Untitled Product',
-          brand_name: p.brand_name || (typeof p.brand === 'object' ? p.brand?.name : p.brand) || brand?.name || 'In-House Brand',
+          brand_name: p.brand_name || (typeof p.brand === 'object' ? p.brand?.name : p.brand) || brand?.name || 'Vendor Brand',
           sku: p.sku || '—',
           category: p.category?.name || p.category || 'General',
           type: p.type || (p.variants && p.variants.length > 0 ? 'Variable' : 'Standard'),
@@ -129,7 +147,7 @@ export default function ProductsListPage() {
     return () => {
       window.removeEventListener('vf:brand-switched', handleBrandSwitched);
     };
-  }, []);
+  }, [brand?.id, activeBrandId]);
 
   const formatCurrency = (val?: number) => {
     return new Intl.NumberFormat('en-MY', {
@@ -293,7 +311,7 @@ export default function ProductsListPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <div className="space-y-6 w-full pb-12">
       {/* Page Header matching Storefront */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -395,9 +413,9 @@ export default function ProductsListPage() {
           <div className="flex flex-wrap items-center gap-3">
             {/* Search Input */}
             <div className="relative flex-1 min-w-[220px] max-w-sm">
-              <Search className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 w-4 h-4 text-base-content/40" />
+              <Search className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 w-4 h-4 text-base-content/60 z-10" />
               <input
-                type="search"
+                type="text"
                 className="input input-bordered input-sm h-10 w-full pl-10 text-xs"
                 placeholder="Search name or SKU"
                 value={searchTerm}
@@ -733,7 +751,7 @@ export default function ProductsListPage() {
                           {/* Edit product */}
                           {hasPermission('vendor.catalog.edit') && (
                             <Link
-                              href={`/vendor-portal/catalog/${product.id}/edit`}
+                              href={`/vendor-portal/catalog/edit?id=${product.id}`}
                               className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-primary"
                               title="Edit Product"
                             >
@@ -872,7 +890,7 @@ export default function ProductsListPage() {
                 Close
               </button>
               <Link
-                href={`/vendor-portal/catalog/${viewProduct.id}/edit`}
+                href={`/vendor-portal/catalog/edit?id=${viewProduct.id}`}
                 className="btn btn-sm btn-primary text-white text-xs gap-1.5"
               >
                 <Edit2 className="w-3.5 h-3.5" />
@@ -997,7 +1015,7 @@ export default function ProductsListPage() {
                 Close
               </button>
               <Link
-                href={`/vendor-portal/catalog/${variantsProduct.id}/edit`}
+                href={`/vendor-portal/catalog/edit?id=${variantsProduct.id}`}
                 className="btn btn-sm btn-primary text-white text-xs"
               >
                 Edit Variants in Catalog

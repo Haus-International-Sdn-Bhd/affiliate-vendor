@@ -233,7 +233,7 @@ export default function VendorSupportPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-base-content tracking-tight flex items-center gap-2.5">

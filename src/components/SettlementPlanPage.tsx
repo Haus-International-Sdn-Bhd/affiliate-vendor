@@ -276,7 +276,7 @@ export default function SettlementPlanPage() {
   }, [apiAvailableClasses, brand]);
 
   return (
-    <div className="space-y-8 w-full max-w-7xl pb-12">
+    <div className="space-y-8 w-full pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
