@@ -1,7 +1,14 @@
 import axios from "axios";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.hausinternational.my";
-const AUTH_API_URL = process.env.NEXT_PUBLIC_AUTH_URL || process.env.NEXT_PUBLIC_API_URL || API_BASE_URL;
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("vendor.vamoflex")
+    ? process.env.NEXT_PUBLIC_API_URL
+    : "https://api.hausinternational.my";
+
+const AUTH_API_URL =
+  process.env.NEXT_PUBLIC_AUTH_URL && !process.env.NEXT_PUBLIC_AUTH_URL.includes("vendor.vamoflex")
+    ? process.env.NEXT_PUBLIC_AUTH_URL
+    : API_BASE_URL;
 const AUTH_API_KEY =
   process.env.NEXT_PUBLIC_AUTH_API_KEY ||
   process.env.NEXT_PUBLIC_API_KEY ||
