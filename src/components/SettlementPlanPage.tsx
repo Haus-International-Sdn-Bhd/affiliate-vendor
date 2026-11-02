@@ -741,12 +741,29 @@ export default function SettlementPlanPage() {
 
           {/* Model B Card */}
           <div
-            className={`rounded-2xl border p-5 space-y-3 transition-all ${
+            className={`rounded-2xl border p-5 space-y-3 transition-all relative overflow-hidden ${
               simPayoutDiff >= 0
                 ? 'border-emerald-500/40 bg-emerald-500/[0.03]'
                 : 'border-base-300 bg-base-100'
             }`}
           >
+            {/* Lock / Not Ready Overlay */}
+            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-4 text-center bg-base-100/80 backdrop-blur-[2px]">
+              <div className="w-10 h-10 rounded-xl bg-base-200 border border-base-300 flex items-center justify-center text-base-content/70 shadow-sm mb-2">
+                <Lock className="w-5 h-5 text-warning" />
+              </div>
+              <span className="badge badge-warning badge-xs font-bold uppercase tracking-wider mb-1">
+                Not Ready
+              </span>
+              <h5 className="text-xs font-bold text-base-content">
+                Model B (Prorata Actual) Not Ready
+              </h5>
+              <p className="text-[11px] text-base-content/60 max-w-[220px] mt-0.5 leading-tight">
+                This settlement calculation model is not ready yet. Only Model A (Fixed Rate) is currently supported.
+              </p>
+            </div>
+
+            <div className="filter blur-[0.5px] opacity-40 select-none pointer-events-none space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
@@ -808,6 +825,7 @@ export default function SettlementPlanPage() {
                 You retain all margin savings when cashback and commissions are optimized below cap.
               </p>
             )}
+            </div>
           </div>
         </div>
       </div>
