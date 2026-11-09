@@ -63,30 +63,12 @@ export default function QuickActionFab() {
 
   const quickLinks = [
     {
-      label: 'Add New Product',
-      desc: 'Create and list product item',
-      href: '/vendor-portal/catalog/add-product',
-      icon: PlusCircle,
-      color: 'text-primary bg-primary/10',
-      badge: 'Catalog',
-      permission: 'vendor.catalog.create',
-    },
-    {
       label: 'Partner Brands',
       desc: 'Switch & register new brands',
       href: '/vendor-portal/brands',
       icon: Store,
       color: 'text-accent bg-accent/10',
       badge: 'Multi-Brand',
-    },
-    {
-      label: 'Settlement Plans',
-      desc: 'Review rates and adjust tier',
-      href: '/vendor-portal/commerce-hub/settlement-plan',
-      icon: Percent,
-      color: 'text-success bg-success/10',
-      badge: `${brandShare}% Net`,
-      permission: 'vendor.settlement_plan.view',
     },
     {
       label: 'Weekly Statements',
@@ -210,7 +192,7 @@ export default function QuickActionFab() {
               <span>{brand?.name || 'VF Vendor'}</span>
             </span>
             <span className="font-mono text-[10px] font-semibold text-primary">
-              v0.1.0
+              v2.0.6
             </span>
           </div>
         </div>

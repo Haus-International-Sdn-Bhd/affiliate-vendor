@@ -44,9 +44,9 @@ const ALL_TOUR_STEPS: TourStep[] = [
   },
   {
     target: '[data-tour="brand-badge"]',
-    title: 'Partner Brand & Settlement Tier',
+    title: 'Vendor Partner & Brands',
     description:
-      'Displays your verified brand partner identity and currently active settlement class tier (e.g. Kelas B - 50% Net Share).',
+      'Displays your verified vendor merchant profile and total registered brands under your account.',
     category: 'Brand Identity',
     icon: Sparkles,
     position: 'right',
@@ -83,17 +83,6 @@ const ALL_TOUR_STEPS: TourStep[] = [
     permission: 'vendor.catalog.view',
   },
   {
-    target: '[data-tour="nav-add-product"]',
-    title: 'Add New Product Listing',
-    description:
-      'List a new product item with rich multi-attribute variants, images, pricing, and automated commission calculations.',
-    category: 'Catalog Dropdown',
-    icon: Package,
-    parentGroup: 'catalog',
-    position: 'right',
-    permission: 'vendor.catalog.create',
-  },
-  {
     target: '[data-tour="nav-performance"]',
     title: 'Product Sales Performance',
     description:
@@ -114,16 +103,6 @@ const ALL_TOUR_STEPS: TourStep[] = [
     parentGroup: 'catalog',
     position: 'right',
     permission: 'vendor.catalog.breakdown',
-  },
-  {
-    target: '[data-tour="nav-settlement-plan"]',
-    title: 'Settlement Plans & Tier Upgrades',
-    description:
-      'Inspect your net payout percentage (45%-55%), compare Kelas A/B/C benefits, and submit settlement plan tier adjustments.',
-    category: 'Commerce Hub',
-    icon: Layers,
-    position: 'right',
-    permission: 'vendor.settlement_plan.view',
   },
   {
     target: '[data-tour="nav-accounting"]',

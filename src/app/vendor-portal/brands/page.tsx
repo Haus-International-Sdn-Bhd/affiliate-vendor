@@ -17,14 +17,17 @@ import {
   Phone,
   Mail,
   Award,
+  Lock,
 } from 'lucide-react';
 
 export default function VendorBrandsPage() {
-  const { brand, brands, activeBrandId, switchBrand, openAddBrandModal } = useAuth();
+  const { user, brand, brands, activeBrandId, switchBrand, hasPermission } = useAuth();
+
+  const isBrandOnly = user?.account_type === 'brand' || !hasPermission('vendor.brands.view');
 
   const partnerBrands = (brands || []).filter((b) => {
     const s = (b.slug || b.name || '').toLowerCase();
-    return !b.is_anchor && s !== 'haus-cosmetics' && !s.includes('haus cosmetics') && b.code !== 'BRD-HAUS';
+    return !b.is_anchor;
   });
 
   const getKelasColor = (kelas?: string) => {
@@ -50,8 +53,40 @@ export default function VendorBrandsPage() {
 
   const currentBrand =
     partnerBrands.find((b) => String(b.id) === String(activeBrandId)) ||
-    (!brand?.is_anchor && brand?.slug !== 'haus-cosmetics' ? brand : null) ||
+    (!brand?.is_anchor ? brand : null) ||
     partnerBrands[0];
+
+  if (isBrandOnly) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center p-4">
+        <div className="card bg-base-100 border border-base-300 shadow-sm rounded-3xl p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-warning/10 text-warning flex items-center justify-center mx-auto">
+            <Lock className="w-8 h-8" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-xl font-black text-base-content">Akses Terhad (Brand Account)</h2>
+            <p className="text-xs text-base-content/60 leading-relaxed">
+              Akaun anda didaftarkan sebagai <strong>Brand Manager</strong> bagi jenama <strong>{brand?.name || 'anda'}</strong>. Pengurusan senarai jenama vendor hanya boleh diakses oleh akaun Vendor Master.
+            </p>
+          </div>
+          <div className="pt-2 flex flex-col gap-2">
+            <Link
+              href="/vendor-portal/dashboard"
+              className="btn btn-primary btn-sm rounded-xl text-white font-bold"
+            >
+              Kembali ke Dashboard
+            </Link>
+            <Link
+              href="/vendor-portal/orders"
+              className="btn btn-ghost btn-sm rounded-xl text-xs font-medium"
+            >
+              Lihat Pesanan Jenama
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 w-full">
@@ -74,15 +109,6 @@ export default function VendorBrandsPage() {
             Manage your registered brands, settlement tiers, payout bank details, and switch active operating brand
           </p>
         </div>
-
-        <button
-          type="button"
-          onClick={openAddBrandModal}
-          className="btn btn-primary btn-sm rounded-xl text-white font-bold gap-2 px-4 shadow-sm"
-        >
-          <PlusCircle className="w-4 h-4" />
-          <span>+ Add New Brand</span>
-        </button>
       </div>
 
       {/* KPI Overview Cards */}
@@ -149,15 +175,6 @@ export default function VendorBrandsPage() {
               Switch active brand to view its dedicated catalog, sales analytics, and accounting statements
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={openAddBrandModal}
-            className="btn btn-outline btn-primary btn-sm rounded-xl text-xs font-bold gap-1.5"
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>+ Add Brand</span>
-          </button>
         </div>
 
         {partnerBrands.length === 0 ? (
@@ -168,17 +185,9 @@ export default function VendorBrandsPage() {
             <div className="space-y-1 max-w-md mx-auto">
               <h4 className="font-bold text-base text-base-content">No Brands Registered Yet</h4>
               <p className="text-xs text-base-content/60 leading-relaxed">
-                You have not registered any partner brands under this vendor account. Add your first brand to start retailing products on Vamoflex.
+                You have not registered any partner brands under this vendor account. Please contact platform administration to assign or link brands to your account.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={openAddBrandModal}
-              className="btn btn-primary btn-sm rounded-xl text-white font-bold gap-2 px-4 shadow-sm"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>Add Your First Brand</span>
-            </button>
           </div>
         ) : (
           <div className="overflow-x-auto">

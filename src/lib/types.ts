@@ -216,3 +216,64 @@ export interface CashbackRule {
   created_by_role: 'admin' | 'vendor';
   created_at?: string;
 }
+
+export interface VendorOrderMetrics {
+  total_orders: number;
+  pending_processing: number;
+  shipped: number;
+  completed: number;
+  total_items_sold: number;
+  vendor_revenue: number;
+}
+
+export interface VendorOrdersResponse {
+  data: VendorOrder[];
+  metrics?: VendorOrderMetrics;
+  total: number;
+  current_page: number;
+  per_page: number;
+  last_page: number;
+}
+
+export interface VendorOrderItem {
+  id: number | string;
+  product_id: number | string;
+  product_name: string;
+  sku?: string;
+  variant_id?: number | string | null;
+  variant_title?: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+  featured_image?: string;
+}
+
+export interface VendorOrder {
+  id: number | string;
+  uuid: string;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  payment_method?: string;
+  created_at: string;
+  tracking_number?: string;
+  courier_name?: string;
+  customer: {
+    name: string;
+    email?: string;
+    phone_number?: string;
+  };
+  shipping_address?: {
+    recipient_name?: string;
+    phone_number?: string;
+    address_line1?: string;
+    address_line2?: string;
+    city?: string;
+    state?: string;
+    postcode?: string;
+    country?: string;
+  };
+  vendor_items_count: number;
+  vendor_subtotal: number;
+  items: VendorOrderItem[];
+}

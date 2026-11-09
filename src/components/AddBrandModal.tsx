@@ -657,15 +657,16 @@ export default function AddBrandModal({ isOpen, onClose }: AddBrandModalProps) {
                   </div>
 
                   <div>
-                    <label className="label py-1 text-xs font-bold text-base-content">
-                      SWIFT / BIC Code
+                    <label className="label py-1 text-xs font-bold text-base-content flex items-center justify-between">
+                      <span>SWIFT / BIC Code</span>
+                      <span className="text-[10px] font-normal text-base-content/50">Auto-filled</span>
                     </label>
                     <input
                       type="text"
                       value={bankSwiftCode}
-                      onChange={(e) => setBankSwiftCode(e.target.value.toUpperCase())}
+                      readOnly
                       placeholder="e.g. MBBEMYKL"
-                      className="input input-sm sm:input-md input-bordered w-full rounded-xl text-xs sm:text-sm font-mono uppercase bg-base-100 focus:border-primary"
+                      className="input input-sm sm:input-md input-bordered w-full rounded-xl text-xs sm:text-sm font-mono uppercase bg-base-200/70 cursor-not-allowed select-none"
                     />
                   </div>
                 </div>

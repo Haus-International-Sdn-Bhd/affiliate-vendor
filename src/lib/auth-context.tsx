@@ -151,7 +151,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (data.brands && Array.isArray(data.brands)) {
         const partnerOnly = data.brands.filter((b: any) => {
           const s = (b.slug || b.name || '').toLowerCase();
-          return !b.is_anchor && s !== 'haus-cosmetics' && !s.includes('haus cosmetics') && b.code !== 'BRD-HAUS';
+          return !b.is_anchor;
         });
         setBrands(partnerOnly);
         localStorage.setItem("vf_vendor_brands", JSON.stringify(partnerOnly));

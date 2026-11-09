@@ -418,6 +418,27 @@ export const vendorApi = {
     return response.data;
   },
 
+  // Orders (Multi-Brand Split Scoped)
+  getOrders: async (params?: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+    brand_id?: string | number;
+    from?: string;
+    to?: string;
+  }) => {
+    const response = await apiClient.get("/v1/vendor/portal/orders", {
+      params,
+    });
+    return response.data;
+  },
+
+  getOrder: async (id: string | number) => {
+    const response = await apiClient.get(`/v1/vendor/portal/orders/${id}`);
+    return response.data;
+  },
+
   // Class Change
   getClassChangeStatus: async () => {
     const response = await apiClient.get(

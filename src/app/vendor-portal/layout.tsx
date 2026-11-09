@@ -10,6 +10,7 @@ import {
   BarChart3,
   Receipt,
   Store,
+  ShoppingCart,
   LogOut,
   Calendar,
   Sparkles,
@@ -112,6 +113,13 @@ export default function DashboardLayout({
         path === "/"
       ) {
         return "Dashboard";
+      }
+      if (
+        path.includes("/orders") ||
+        path === "/vendor-portal/orders" ||
+        path === "/orders"
+      ) {
+        return "Orders & Fulfillment";
       }
       if (
         path.includes("/catalog/manage-product") ||
@@ -231,6 +239,14 @@ export default function DashboardLayout({
       return true;
     }
     if (
+      href === "/vendor-portal/orders" &&
+      (pathname === "/vendor-portal/orders" ||
+        pathname === "/orders" ||
+        pathname.startsWith("/vendor-portal/orders/"))
+    ) {
+      return true;
+    }
+    if (
       href === "/vendor-portal/catalog/manage-product" &&
       (pathname === "/vendor-portal/products" ||
         (pathname.startsWith("/vendor-portal/products/") &&
@@ -260,6 +276,18 @@ export default function DashboardLayout({
     },
     {
       type: "link" as const,
+      name: "Orders",
+      href: "/vendor-portal/orders",
+      aliases: [
+        "/vendor-portal/orders",
+        "/orders",
+      ],
+      icon: ShoppingCart,
+      permission: "vendor.orders.view",
+      dataTour: "nav-orders",
+    },
+    {
+      type: "link" as const,
       name: "Partner Brands",
       href: "/vendor-portal/brands",
       aliases: [
@@ -267,6 +295,7 @@ export default function DashboardLayout({
         "/brands",
       ],
       icon: Store,
+      permission: "vendor.brands.view",
       dataTour: "nav-brands",
     },
     {
@@ -283,14 +312,6 @@ export default function DashboardLayout({
           icon: Boxes,
           permission: "vendor.catalog.view",
           dataTour: "nav-manage-product",
-        },
-        {
-          name: "Add Product",
-          href: "/vendor-portal/catalog/add-product",
-          aliases: ["/vendor-portal/products/new", "/products/new"],
-          icon: PlusCircle,
-          permission: "vendor.catalog.create",
-          dataTour: "nav-add-product",
         },
         {
           name: "Customer Cashback",
@@ -362,14 +383,6 @@ export default function DashboardLayout({
       icon: Layers,
       dataTour: "nav-commerce-hub",
       items: [
-        {
-          name: "Settlement Plan",
-          href: "/vendor-portal/commerce-hub/settlement-plan",
-          aliases: ["/vendor-portal/settlement-plan", "/settlement-plan"],
-          icon: Percent,
-          permission: "vendor.settlement_plan.view",
-          dataTour: "nav-settlement-plan",
-        },
         {
           name: "Class Change History",
           href: "/vendor-portal/commerce-hub/history",
@@ -580,11 +593,18 @@ export default function DashboardLayout({
                 className="h-9 w-9 object-contain"
               />
             ) : (
-              <img
-                src="/images/logo/logo.png"
-                alt="VAMOFLEX"
-                className="h-20 sm:h-18 w-auto max-h-20 object-contain"
-              />
+              <div className="flex items-center justify-center w-full">
+                <img
+                  src="/images/logo/logo_black.png"
+                  alt="VAMOFLEX"
+                  className="h-8 sm:h-9 w-auto max-h-9 object-contain dark:hidden"
+                />
+                <img
+                  src="/images/logo/logo.png"
+                  alt="VAMOFLEX"
+                  className="h-8 sm:h-9 w-auto max-h-9 object-contain hidden dark:block"
+                />
+              </div>
             )}
           </Link>
         </div>
@@ -824,20 +844,20 @@ export default function DashboardLayout({
           {!isCollapsed ? (
             <div className="text-left space-y-0.5 w-full">
               <p className="text-xs font-bold text-base-content/85 tracking-wide">
-                VF Vendor <span className="font-mono text-primary font-bold">v0.1.0</span>
+                VF Vendor <span className="font-mono text-primary font-bold">v2.0.6</span>
               </p>
               <p className="text-[11px] text-base-content/50 font-mono">
-                Build 2026.09.01
+                Build 2026.11.04
               </p>
             </div>
           ) : (
             <div className="flex justify-center w-full relative group">
               <span className="text-[10px] font-mono font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
-                v0.1.0
+                v2.0.6
               </span>
               <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 hidden group-hover:flex items-center z-[100] pointer-events-none">
                 <div className="bg-base-100 text-base-content text-xs font-semibold px-3 py-1.5 rounded-xl shadow-2xl border border-base-300 whitespace-nowrap">
-                  VF Vendor v0.1.0 (Build 2026.09.01)
+                  VF Vendor v2.0.6 (Build 2026.11.04)
                 </div>
               </div>
             </div>

@@ -75,21 +75,7 @@ export default function ProductsListPage() {
 
       // Map to storefront-compatible structure
       // Filter out any anchor / Haus Cosmetics products that are not part of vendor catalog
-      const vendorItems = list.filter((p: any) => {
-        const bName = String(
-          p.brand_name ||
-          (typeof p.brand === 'object' ? p.brand?.name : p.brand) ||
-          ''
-        ).toLowerCase();
-        if (
-          bName.includes('haus cosmetics') ||
-          bName === 'haus-cosmetics' ||
-          Number(p.brand_id) === 1
-        ) {
-          return false;
-        }
-        return true;
-      });
+      const vendorItems = list;
 
       const normalized = vendorItems.map((p: any) => {
         const priceVal = typeof p.price === 'number'

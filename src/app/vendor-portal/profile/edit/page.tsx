@@ -872,8 +872,8 @@ export default function EditVendorProfilePage() {
                     type="text"
                     name="bank_swift_code"
                     value={formData.bank_swift_code}
-                    onChange={handleChange}
-                    className="input input-bordered input-sm w-full focus:input-primary font-mono uppercase tracking-wider pr-16"
+                    readOnly
+                    className="input input-bordered input-sm w-full font-mono uppercase tracking-wider pr-16 bg-base-200/70 cursor-not-allowed select-none"
                     placeholder="e.g. PBBEMYKL"
                   />
                   {formData.bank_swift_code && (

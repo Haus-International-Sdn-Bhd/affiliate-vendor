@@ -6,12 +6,9 @@ import {
   Store,
   ChevronDown,
   Check,
-  PlusCircle,
-  Sparkles,
   Building2,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
-import { Brand } from '@/lib/types';
 
 interface BrandSwitcherProps {
   compact?: boolean;
@@ -21,119 +18,184 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
   const {
     brand,
     brands,
+    user,
     activeBrandId,
     switchBrand,
-    openAddBrandModal,
   } = useAuth();
-
-  const getKelasColor = (kelas?: string) => {
-    switch (kelas?.toLowerCase()) {
-      case 'kelas_a':
-        return 'badge-primary';
-      case 'kelas_b':
-        return 'badge-info';
-      case 'kelas_c':
-        return 'badge-accent';
-      case 'kelas_d':
-        return 'badge-warning';
-      case 'kelas_e':
-      case 'kelas_f':
-        return 'badge-error';
-      default:
-        return 'badge-ghost';
-    }
-  };
-
-  const getKelasLabel = (kelas?: string) => {
-    if (!kelas) return 'Kelas B';
-    return kelas.replace('_', ' ').toUpperCase();
-  };
 
   // Filter out any anchor / Haus Cosmetics brands
   const partnerBrands = (brands || []).filter((b) => {
-    const s = (b.slug || b.name || '').toLowerCase();
-    return !b.is_anchor && s !== 'haus-cosmetics' && !s.includes('haus cosmetics') && b.code !== 'BRD-HAUS';
+    return !b.is_anchor;
   });
+
+  const totalBrandsCount = partnerBrands.length;
+
+  // Resolve vendor name
+  // Prioritize vendor_name, company_name, user name, or active brand's vendor name
+  const vendorName = (
+    user?.vendor_name ||
+    user?.company_name ||
+    user?.name ||
+    brand?.vendor_name ||
+    brand?.company_name ||
+    (user?.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : '') ||
+    user?.username ||
+    brand?.name ||
+    'Vendor Partner'
+  ).trim();
+
+  // Active brand identifier
+  const currentBrand =
+    partnerBrands.find((b) => String(b.id) === String(activeBrandId)) ||
+    (!brand?.is_anchor ? brand : null) ||
+    partnerBrands[0];
 
   // If vendor has 0 brands yet
   if (!partnerBrands || partnerBrands.length === 0) {
     if (compact) {
       return (
-        <button
-          type="button"
-          onClick={openAddBrandModal}
-          className="btn btn-ghost btn-circle btn-sm text-primary"
-          title="Add Brand"
+        <div
+          className="w-9 h-9 rounded-xl bg-base-200 text-base-content/60 flex items-center justify-center shrink-0 border border-base-300"
+          title={vendorName}
         >
-          <PlusCircle className="w-5 h-5" />
-        </button>
+          <Building2 className="w-4 h-4" />
+        </div>
       );
     }
 
     return (
-      <button
-        type="button"
-        onClick={openAddBrandModal}
-        className="btn btn-sm btn-outline btn-primary rounded-xl text-xs font-bold gap-1.5"
+      <div
+        className="w-full py-2 px-3 bg-base-200/60 border border-base-300 rounded-2xl flex items-center gap-2.5"
+        title={vendorName}
       >
-        <PlusCircle className="w-4 h-4" />
-        <span>+ Add Brand</span>
-      </button>
+        <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+          <Building2 className="w-4 h-4" />
+        </div>
+        <div className="min-w-0 flex-1 text-left">
+          <span className="font-bold text-xs text-base-content truncate block leading-tight">
+            {vendorName}
+          </span>
+          <span className="text-[11px] text-base-content/60 leading-none truncate block mt-0.5">
+            0 Brands
+          </span>
+        </div>
+      </div>
     );
   }
 
-  // Active brand identifier
-  const currentBrand =
-    partnerBrands.find((b) => String(b.id) === String(activeBrandId)) ||
-    (!brand?.is_anchor && brand?.slug !== 'haus-cosmetics' ? brand : null) ||
-    partnerBrands[0];
+  // Compact Mode (for collapsed sidebar)
+  if (compact) {
+    return (
+      <div className="dropdown dropdown-right">
+        <div
+          tabIndex={0}
+          role="button"
+          className="btn btn-ghost btn-circle btn-sm w-9 h-9 rounded-xl bg-base-200/80 hover:bg-base-200 border border-base-300 flex items-center justify-center text-primary cursor-pointer transition-all"
+          title={`${vendorName} (${totalBrandsCount} ${totalBrandsCount === 1 ? 'Brand' : 'Brands'})`}
+        >
+          <Building2 className="w-4 h-4" />
+        </div>
 
+        {/* Dropdown Content */}
+        <ul
+          tabIndex={0}
+          className="dropdown-content z-50 menu p-2 shadow-2xl bg-base-100 rounded-2xl w-64 border border-base-300 mt-1 space-y-1 animate-in fade-in zoom-in-95 duration-150"
+        >
+          <li className="menu-title px-3 py-1.5 text-[11px] font-bold text-base-content border-b border-base-200">
+            <div className="flex flex-col">
+              <span className="text-xs font-black truncate">{vendorName}</span>
+              <span className="text-[10px] text-base-content/60 font-normal mt-0.5">
+                {totalBrandsCount} {totalBrandsCount === 1 ? 'Brand' : 'Brands'} under vendor
+              </span>
+            </div>
+          </li>
+
+          <div className="max-h-56 overflow-y-auto py-1 space-y-0.5">
+            {partnerBrands.map((b) => {
+              const isActive = String(b.id) === String(currentBrand?.id);
+
+              return (
+                <li key={b.id}>
+                  <button
+                    type="button"
+                    onClick={() => switchBrand(String(b.id))}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
+                      isActive
+                        ? 'bg-primary/10 text-primary font-bold'
+                        : 'hover:bg-base-200 text-base-content'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <Store className="w-3.5 h-3.5 shrink-0 text-base-content/60" />
+                      <span className="truncate">{b.name}</span>
+                    </div>
+                    {isActive && <Check className="w-4 h-4 text-primary shrink-0 ml-1" />}
+                  </button>
+                </li>
+              );
+            })}
+          </div>
+
+          <div className="pt-1 border-t border-base-200">
+            <li>
+              <Link
+                href="/vendor-portal/brands"
+                className="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-base-content/80 hover:bg-base-200 rounded-xl"
+              >
+                <Store className="w-4 h-4 text-base-content/60" />
+                <span>View All Brands</span>
+              </Link>
+            </li>
+          </div>
+        </ul>
+      </div>
+    );
+  }
+
+  // Expanded Sidebar / Standard View
   return (
-    <div className="dropdown dropdown-bottom dropdown-end">
+    <div className="dropdown dropdown-bottom dropdown-end w-full">
       <div
         tabIndex={0}
         role="button"
-        className={`btn btn-ghost ${
-          compact
-            ? 'btn-circle btn-sm'
-            : 'h-auto py-1.5 px-2.5 sm:px-3 bg-base-200/80 hover:bg-base-200 border border-base-300 rounded-xl'
-        } flex items-center gap-2 cursor-pointer transition-all`}
-        title={`Active Brand: ${currentBrand?.name || 'Partner Brand'}`}
+        className="w-full py-2 px-3 bg-base-200/70 hover:bg-base-200 border border-base-300/80 rounded-2xl flex items-center justify-between gap-2.5 cursor-pointer transition-all duration-150 shadow-2xs"
+        title={`${vendorName} - ${totalBrandsCount} ${totalBrandsCount === 1 ? 'Brand' : 'Brands'}`}
       >
-        <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-          <Store className="w-4 h-4" />
+        <div className="flex items-center gap-2.5 min-w-0 flex-1 text-left">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <Building2 className="w-4 h-4" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <span className="font-extrabold text-xs text-base-content truncate block leading-tight">
+              {vendorName}
+            </span>
+            <span className="text-[11px] text-base-content/60 font-medium leading-none truncate block mt-1">
+              {totalBrandsCount} {totalBrandsCount === 1 ? 'Brand' : 'Brands'}
+            </span>
+          </div>
         </div>
 
-        {!compact && (
-          <div className="flex items-center gap-2 min-w-0 text-left">
-            <div className="min-w-0 max-w-[130px] sm:max-w-[180px]">
-              <span className="font-extrabold text-xs text-base-content truncate block leading-tight">
-                {currentBrand?.name || 'Partner Brand'}
-              </span>
-              <span className="text-[10px] text-base-content/60 leading-none truncate block">
-                {getKelasLabel(currentBrand?.current_class || currentBrand?.settlement_class)}
-              </span>
-            </div>
-            <ChevronDown className="w-3.5 h-3.5 text-base-content/60 shrink-0" />
-          </div>
-        )}
+        <ChevronDown className="w-3.5 h-3.5 text-base-content/50 shrink-0" />
       </div>
 
       {/* Dropdown Content */}
       <ul
         tabIndex={0}
-        className="dropdown-content z-50 menu p-2 shadow-2xl bg-base-100 rounded-2xl w-64 sm:w-72 border border-base-300 mt-2 space-y-1 animate-in fade-in zoom-in-95 duration-150"
+        className="dropdown-content z-50 menu p-2 shadow-2xl bg-base-100 rounded-2xl w-full min-w-[240px] border border-base-300 mt-2 space-y-1 animate-in fade-in zoom-in-95 duration-150"
       >
-        <li className="menu-title px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-base-content/50 border-b border-base-200 flex justify-between items-center">
-          <span>Switch Brand ({partnerBrands.length})</span>
-          <span className="text-[10px] font-normal lowercase">1 vendor → n brands</span>
+        <li className="menu-title px-3 py-2 border-b border-base-200">
+          <div className="flex flex-col">
+            <span className="text-xs font-black text-base-content truncate">{vendorName}</span>
+            <span className="text-[10px] text-base-content/60 font-normal mt-0.5">
+              {totalBrandsCount} {totalBrandsCount === 1 ? 'Brand' : 'Brands'} under vendor
+            </span>
+          </div>
         </li>
 
         <div className="max-h-56 overflow-y-auto py-1 space-y-0.5">
           {partnerBrands.map((b) => {
             const isActive = String(b.id) === String(currentBrand?.id);
-            const tierBadge = getKelasColor(b.current_class || b.settlement_class);
-            const tierLabel = getKelasLabel(b.current_class || b.settlement_class);
 
             return (
               <li key={b.id}>
@@ -147,30 +209,8 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <div
-                      className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                        isActive
-                          ? 'bg-primary text-white'
-                          : 'bg-base-200 text-base-content/70'
-                      }`}
-                    >
-                      <Building2 className="w-3.5 h-3.5" />
-                    </div>
-                    <div className="min-w-0 flex-1 text-left">
-                      <div className="truncate text-xs">{b.name}</div>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span
-                          className={`badge ${tierBadge} badge-xs text-[9px] font-bold`}
-                        >
-                          {tierLabel}
-                        </span>
-                        {b.code && (
-                          <span className="text-[10px] font-mono text-base-content/50">
-                            {b.code}
-                          </span>
-                        )}
-                      </div>
-                    </div>
+                    <Store className="w-3.5 h-3.5 shrink-0 text-base-content/60" />
+                    <span className="truncate">{b.name}</span>
                   </div>
 
                   {isActive && <Check className="w-4 h-4 text-primary shrink-0 ml-1" />}
@@ -180,8 +220,8 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
           })}
         </div>
 
-        {/* Divider and Add Brand action */}
-        <div className="pt-1 border-t border-base-200 space-y-0.5">
+        {/* Divider and Manage Brands action */}
+        <div className="pt-1 border-t border-base-200">
           <li>
             <Link
               href="/vendor-portal/brands"
@@ -190,16 +230,6 @@ export default function BrandSwitcher({ compact = false }: BrandSwitcherProps) {
               <Store className="w-4 h-4 text-base-content/60" />
               <span>Manage All Brands</span>
             </Link>
-          </li>
-          <li>
-            <button
-              type="button"
-              onClick={openAddBrandModal}
-              className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/10 rounded-xl"
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>+ Add New Brand</span>
-            </button>
           </li>
         </div>
       </ul>
